@@ -31,11 +31,17 @@ export function KnockoutStage({ leagueSlug, onMatchClick }: { leagueSlug: string
 
   const allEvents = data?.events || [];
   
+  // Encontrar o ano da temporada mais recente no payload (evita misturar Champions League 25/26 com 26/27)
+  const latestSeasonYear = Math.max(...allEvents.map((e: any) => e.season?.year || 0));
+  
+  // Filtrar os eventos para manter apenas os da temporada atual
+  const currentSeasonEvents = allEvents.filter((e: any) => (e.season?.year || 0) === latestSeasonYear);
+  
   // Agrupar os jogos por fase
   const groupedEvents = KNOCKOUT_STAGES.map(stage => {
     return {
       ...stage,
-      events: allEvents.filter((e: any) => e.season?.slug === stage.slug)
+      events: currentSeasonEvents.filter((e: any) => e.season?.slug === stage.slug)
     };
   }).filter(stage => stage.events.length > 0);
 
