@@ -44,18 +44,19 @@ export default function Home() {
   
   // Próximos Jogos (ordem de data crescente, máx 10 na home, 50 na liga)
   const isHome = activeLeague === "all";
-  const limit = isHome ? 10 : 50;
+  const upcomingLimit = isHome ? 10 : 50;
+  const finishedLimit = isHome ? 6 : 50;
 
   const upcomingEvents = events
     .filter((e) => e.status.type.state === "pre")
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, limit);
+    .slice(0, upcomingLimit);
     
   // Últimos Jogos (ordem de data decrescente)
   const finishedEvents = events
     .filter((e) => e.status.type.state === "post")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, limit);
+    .slice(0, finishedLimit);
 
   return (
     <main className="flex-1 flex flex-col bg-[#020617] min-h-screen">
