@@ -50,11 +50,11 @@ export const fetchScoreboard = async (
     } as unknown as ESPNScoreboardResponse;
   }
 
-  // Para ligas específicas, busca o calendário completo do ano para preencher o filtro "Finalizados"
+  // Para ligas específicas, busca o calendário com limite alto para garantir todas as partidas do ano
   if (!date) {
     params.dates = new Date().getFullYear().toString();
-    params.limit = 1000;
   }
+  params.limit = 1000;
 
   const response = await axios.get(`${ESPN_BASE_URL}/${leagueSlug}/scoreboard`, { params });
   return response.data;
