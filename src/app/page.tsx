@@ -152,7 +152,7 @@ export default function Home() {
             ) : (
               // MODO ABA ESPECÍFICA: FILTRO TOGGLE
               <section>
-                <div className="flex items-center gap-6 mb-6 border-b border-slate-800 pb-2">
+                <div className="flex flex-wrap items-center gap-y-4 gap-x-6 mb-6 border-b border-slate-800 pb-2">
                   <button 
                     onClick={() => setLeagueFilterMode("upcoming")}
                     className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "upcoming" ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
