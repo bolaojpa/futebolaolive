@@ -5,6 +5,7 @@ export interface ESPNScoreboardResponse {
     name: string;
     abbreviation: string;
     slug: string;
+    logos?: { href: string }[];
   }[];
   events: ESPNEvent[];
 }
