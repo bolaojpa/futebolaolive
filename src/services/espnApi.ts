@@ -21,9 +21,11 @@ export const fetchScoreboard = async (
   if (date) params.dates = date;
 
   if (leagueSlug === "all") {
-    // Busca todas as ligas rastreadas no sistema (Para a Home, mantém o comportamento padrão de rodada para performance)
+    // Para a Home, busca o ano inteiro de todas as ligas (limit 1000) para garantir que possamos pegar os 'Últimos Jogos'
     const promises = ALL_LEAGUES_SLUGS.map((slug) =>
-      axios.get(`${ESPN_BASE_URL}/${slug}/scoreboard`, { params }).then(res => ({
+      axios.get(`${ESPN_BASE_URL}/${slug}/scoreboard`, { 
+        params: { ...params, dates: new Date().getFullYear().toString(), limit: 1000 } 
+      }).then(res => ({
         data: res.data,
         slug
       })).catch(() => null)
