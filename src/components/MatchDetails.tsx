@@ -183,17 +183,28 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
 
   return (
     <div className="space-y-4">
-      {sortedEvents.map((event, idx) => (
-        <div key={event.id || idx} className="flex items-start gap-4 p-3 bg-slate-800/50 rounded-lg">
-          <div className="w-12 text-right font-bold text-slate-400 shrink-0">
-            {event.clock?.displayValue}'
+      {sortedEvents.map((event, idx) => {
+        const clockDisplay = event.clock?.displayValue;
+        const clockLabel = clockDisplay ? `${clockDisplay}'` : "⏱️";
+        
+        let shortText = event.shortText?.trim();
+        // Corrige erro da API da ESPN PT-BR onde a frase corta em "aos"
+        if (shortText && shortText.toLowerCase().endsWith("aos")) {
+          shortText = `${shortText} ${clockDisplay || "0"}'`;
+        }
+
+        return (
+          <div key={event.id || idx} className="flex items-start gap-4 p-3 bg-slate-800/50 rounded-lg">
+            <div className="w-12 text-right font-bold text-slate-400 shrink-0">
+              {clockLabel}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-200">{event.text}</p>
+              {shortText && <p className="text-xs text-slate-500 mt-1">{shortText}</p>}
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-200">{event.text}</p>
-            {event.shortText && <p className="text-xs text-slate-500 mt-1">{event.shortText}</p>}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
