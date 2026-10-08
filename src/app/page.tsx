@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { LEAGUES, LeagueSelector } from "@/components/LeagueSelector";
 import { MatchCard } from "@/components/MatchCard";
 import { MatchDetailsModal } from "@/components/MatchDetails";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ChevronDown } from "lucide-react";
 import { Standings } from "@/components/Standings";
 import { KnockoutStage } from "@/components/KnockoutStage";
 
@@ -152,7 +152,25 @@ export default function Home() {
             ) : (
               // MODO ABA ESPECÍFICA: FILTRO TOGGLE
               <section>
-                <div className="flex flex-wrap items-center gap-y-4 gap-x-6 mb-6 border-b border-slate-800 pb-2">
+                {/* Mobile Filter Dropdown */}
+                <div className="md:hidden mb-6 relative">
+                  <select
+                    value={leagueFilterMode}
+                    onChange={(e) => setLeagueFilterMode(e.target.value as any)}
+                    className="w-full appearance-none bg-slate-900 border border-slate-800 text-slate-200 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="upcoming">Próximos Jogos</option>
+                    <option value="finished">Finalizados</option>
+                    <option value="standings">Classificação</option>
+                    <option value="knockout">Mata-Mata</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <ChevronDown className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Desktop Filter Tabs */}
+                <div className="hidden md:flex flex-wrap items-center gap-y-4 gap-x-6 mb-6 border-b border-slate-800 pb-2">
                   <button 
                     onClick={() => setLeagueFilterMode("upcoming")}
                     className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "upcoming" ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
