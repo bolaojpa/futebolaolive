@@ -66,3 +66,12 @@ export const fetchMatchSummary = async (leagueSlug: string, eventId: string): Pr
   });
   return response.data;
 };
+
+export const fetchStandings = async (leagueSlug: string): Promise<any> => {
+  // O endpoint de standings usa apis/v2/sports/soccer/.../standings
+  const url = `https://site.api.espn.com/apis/v2/sports/soccer/${leagueSlug}/standings`;
+  const response = await axios.get(url, {
+    params: { lang: "pt", region: "br" }
+  });
+  return response.data;
+};
