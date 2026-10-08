@@ -9,11 +9,12 @@ import { MatchCard } from "@/components/MatchCard";
 import { MatchDetailsModal } from "@/components/MatchDetails";
 import { RefreshCw } from "lucide-react";
 import { Standings } from "@/components/Standings";
+import { KnockoutStage } from "@/components/KnockoutStage";
 
 export default function Home() {
   const [activeLeague, setActiveLeague] = useState<string>(LEAGUES[0].slug);
   const [selectedEvent, setSelectedEvent] = useState<{ id: string, slug: string } | null>(null);
-  const [leagueFilterMode, setLeagueFilterMode] = useState<"upcoming" | "finished" | "standings">("upcoming");
+  const [leagueFilterMode, setLeagueFilterMode] = useState<"upcoming" | "finished" | "standings" | "knockout">("upcoming");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["scoreboard", activeLeague],
@@ -173,10 +174,19 @@ export default function Home() {
                     <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "standings" ? "bg-amber-500" : "bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Classificação</h3>
                   </button>
+                  <button 
+                    onClick={() => setLeagueFilterMode("knockout")}
+                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "knockout" ? "border-purple-500 text-purple-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "knockout" ? "bg-purple-500" : "bg-slate-600"}`} />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Mata-Mata</h3>
+                  </button>
                 </div>
                 
                 {leagueFilterMode === "standings" ? (
                   <Standings leagueSlug={activeLeague} />
+                ) : leagueFilterMode === "knockout" ? (
+                  <KnockoutStage leagueSlug={activeLeague} onMatchClick={(id, slug) => setSelectedEvent({ id, slug })} />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {leagueFilterMode === "upcoming" ? (
