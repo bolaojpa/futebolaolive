@@ -60,13 +60,14 @@ export function KnockoutStage({ leagueSlug, onMatchClick }: { leagueSlug: string
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {stage.events.map((event: ESPNEvent) => (
-              <MatchCard 
-                key={event.id}
-                event={event}
-                onClick={(id) => onMatchClick(id, leagueSlug)}
-              />
+              <div key={event.id} className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(25%-1rem)] max-w-[450px]">
+                <MatchCard 
+                  event={event}
+                  onClick={(id) => onMatchClick(id, leagueSlug)}
+                />
+              </div>
             ))}
           </div>
         </section>
