@@ -20,13 +20,32 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
   const isFinished = status.type.state === "post";
   const isScheduled = status.type.state === "pre";
 
-  // Formatar data: "DD/MM - HH:MM"
-  const formattedDate = new Date(event.date).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).replace(", ", " - ");
+  // Formatar data: "Hoje/Amanhã/Ontem/DD/MM - HH:MM"
+  const eventDate = new Date(event.date);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getDate() === d2.getDate() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getFullYear() === d2.getFullYear();
+
+  let datePrefix = "";
+  if (isSameDay(eventDate, today)) {
+    datePrefix = "Hoje";
+  } else if (isSameDay(eventDate, tomorrow)) {
+    datePrefix = "Amanhã";
+  } else if (isSameDay(eventDate, yesterday)) {
+    datePrefix = "Ontem";
+  } else {
+    datePrefix = eventDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  }
+
+  const timeString = eventDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const formattedDate = `${datePrefix} - ${timeString}`;
 
   // Formatar nome da liga a partir do slug (ex: "2024-25-english-premier-league" -> "English Premier League")
   const formatSeasonSlug = (slug: string) => {
