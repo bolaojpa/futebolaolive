@@ -17,7 +17,7 @@ export const fetchScoreboard = async (
   leagueSlug: string = "uefa.champions",
   date?: string // Formato: YYYYMMDD
 ): Promise<ESPNScoreboardResponse> => {
-  const params: any = { lang: "pt", region: "br" };
+  const params: any = { lang: "pt", region: "br", _t: Date.now() };
   if (date) params.dates = date;
 
   if (leagueSlug === "all") {

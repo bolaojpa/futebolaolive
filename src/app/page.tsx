@@ -19,8 +19,9 @@ export default function Home() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["scoreboard", activeLeague],
     queryFn: () => fetchScoreboard(activeLeague),
-    // Polling only se houver necessidade
+    // Polling a cada 30 segundos com suporte a background
     refetchInterval: 30000, 
+    refetchIntervalInBackground: true,
   });
 
   const events = data?.events || [];

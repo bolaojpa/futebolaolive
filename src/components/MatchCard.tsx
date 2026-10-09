@@ -79,7 +79,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
           {isLive && (
             <span className="flex items-center gap-1.5 text-xs font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-              {status.displayClock}
+              {status.displayClock && status.displayClock !== "0'" ? status.displayClock : status.type.shortDetail}
             </span>
           )}
           {isFinished && (
