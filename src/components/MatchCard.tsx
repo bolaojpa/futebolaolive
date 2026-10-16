@@ -22,6 +22,19 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
   const isFinished = status.type.state === "post";
   const isScheduled = status.type.state === "pre";
 
+  // Prevenção de hidratação e relógio ao vivo para contagem regressiva
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    setMounted(true);
+    if (!isScheduled) return;
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isScheduled]);
+
   // Monitoramento de Gols em tempo real
   const [goalAlert, setGoalAlert] = useState<boolean>(false);
   const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
@@ -87,6 +100,55 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
   const timeString = eventDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const formattedDate = `${datePrefix} - ${timeString}`;
 
+  // Cálculo da contagem regressiva para jogos prestes a começar
+  const diffMs = eventDate.getTime() - now.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  // Menos de 1 hora para começar (contagem regressiva: "Começa em MM:SS")
+  const isLessThan1Hour = mounted && isScheduled && diffMs > 0 && diffMs < 60 * 60 * 1000;
+  // Menos de 2 horas (e pelo menos 1 hora) para começar ("Daqui a pouco - HH:MM")
+  const isLessThan2Hours = mounted && isScheduled && diffMs >= 60 * 60 * 1000 && diffMs < 120 * 60 * 1000;
+  // Passou do horário agendado mas ainda não iniciou oficialmente
+  const isImminent = mounted && isScheduled && diffMs <= 0 && diffMs > -30 * 60 * 1000;
+
+  const renderScheduledStatus = () => {
+    if (isLessThan1Hour) {
+      const minutesStr = String(Math.max(0, diffMinutes)).padStart(2, "0");
+      const secondsStr = String(Math.max(0, diffSeconds)).padStart(2, "0");
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+          Começa em {minutesStr}:{secondsStr}
+        </span>
+      );
+    }
+
+    if (isImminent) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 animate-pulse">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          Começa a qualquer momento
+        </span>
+      );
+    }
+
+    if (isLessThan2Hours) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          Daqui a pouco - {timeString}
+        </span>
+      );
+    }
+
+    return (
+      <span className="text-xs font-medium text-emerald-400">
+        {formattedDate}
+      </span>
+    );
+  };
+
   // Formatar nome da liga a partir do slug (ex: "2024-25-english-premier-league" -> "English Premier League")
   const formatSeasonSlug = (slug: string) => {
     if (!slug) return "Competição";
@@ -146,11 +208,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
               {formattedDate} | Fim
             </span>
           )}
-          {isScheduled && (
-            <span className="text-xs font-medium text-emerald-400">
-              {formattedDate}
-            </span>
-          )}
+          {isScheduled && renderScheduledStatus()}
         </div>
       </div>
 
