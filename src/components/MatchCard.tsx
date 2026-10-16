@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { ESPNEvent } from "@/types/espn";
 import { cn } from "@/lib/utils";
 
@@ -8,9 +9,10 @@ interface MatchCardProps {
   leagueName?: string;
   leagueLogo?: string;
   onClick: (eventId: string) => void;
+  isDimmed?: boolean;
 }
 
-export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardProps) {
+export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: MatchCardProps) {
   const competition = event.competitions[0];
   const homeTeam = competition.competitors.find((c) => c.homeAway === "home")!;
   const awayTeam = competition.competitors.find((c) => c.homeAway === "away")!;
@@ -19,6 +21,44 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
   const isLive = status.type.state === "in";
   const isFinished = status.type.state === "post";
   const isScheduled = status.type.state === "pre";
+
+  // Monitoramento de Gols em tempo real
+  const [goalAlert, setGoalAlert] = useState<boolean>(false);
+  const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
+  const prevScoresRef = useRef<{ home: string; away: string } | null>(null);
+
+  const homeScoreStr = homeTeam.score ?? "0";
+  const awayScoreStr = awayTeam.score ?? "0";
+
+  useEffect(() => {
+    if (isLive) {
+      if (prevScoresRef.current !== null) {
+        const prevHome = parseInt(prevScoresRef.current.home, 10) || 0;
+        const prevAway = parseInt(prevScoresRef.current.away, 10) || 0;
+        const currHome = parseInt(homeScoreStr, 10) || 0;
+        const currAway = parseInt(awayScoreStr, 10) || 0;
+
+        if (currHome > prevHome) {
+          setGoalAlert(true);
+          setGoalSide("home");
+          const t = setTimeout(() => {
+            setGoalAlert(false);
+            setGoalSide(null);
+          }, 12000);
+          return () => clearTimeout(t);
+        } else if (currAway > prevAway) {
+          setGoalAlert(true);
+          setGoalSide("away");
+          const t = setTimeout(() => {
+            setGoalAlert(false);
+            setGoalSide(null);
+          }, 12000);
+          return () => clearTimeout(t);
+        }
+      }
+      prevScoresRef.current = { home: homeScoreStr, away: awayScoreStr };
+    }
+  }, [homeScoreStr, awayScoreStr, isLive]);
 
   // Formatar data: "Hoje/Amanhã/Ontem/DD/MM - HH:MM"
   const eventDate = new Date(event.date);
@@ -60,8 +100,19 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
   return (
     <div 
       onClick={() => onClick(event.id)}
-      className="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all group relative overflow-hidden flex flex-col justify-between"
+      className={cn(
+        "bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between",
+        isDimmed && "opacity-60 hover:opacity-100 hover:border-slate-700/80 filter grayscale-[15%] hover:grayscale-0",
+        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.5)] bg-slate-900 animate-pulse"
+      )}
     >
+      {/* Alerta animado de GOL! */}
+      {goalAlert && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl animate-bounce">
+          <span>⚽</span> GOL!
+        </div>
+      )}
+
       {/* Status Bar Top */}
       <div className="flex justify-between items-center mb-4">
         <span 
@@ -77,8 +128,16 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
         </span>
         <div className="flex items-center gap-2">
           {isLive && (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className={cn(
+              "flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full transition-colors",
+              goalAlert 
+                ? "bg-emerald-500 text-slate-950 font-black" 
+                : "text-rose-500 bg-rose-500/10"
+            )}>
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full animate-pulse",
+                goalAlert ? "bg-slate-950" : "bg-rose-500"
+              )} />
               {status.displayClock && status.displayClock !== "0'" ? status.displayClock : status.type.shortDetail}
             </span>
           )}
@@ -106,7 +165,10 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
               <div className="w-10 h-10 rounded-full bg-slate-800" />
             )}
           </div>
-          <span className="text-sm font-semibold text-slate-200 text-center line-clamp-1">
+          <span className={cn(
+            "text-sm font-semibold text-center line-clamp-1 transition-colors",
+            goalSide === "home" ? "text-emerald-400 font-bold" : "text-slate-200"
+          )}>
             {homeTeam.team.shortDisplayName}
           </span>
         </div>
@@ -115,9 +177,23 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
         <div className="flex flex-col items-center justify-center px-4 flex-1">
           {!isScheduled ? (
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-white">{homeTeam.score}</span>
+              <span className={cn(
+                "text-3xl font-bold transition-all duration-300",
+                goalSide === "home" 
+                  ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                  : "text-white"
+              )}>
+                {homeTeam.score}
+              </span>
               <span className="text-slate-600">-</span>
-              <span className="text-3xl font-bold text-white">{awayTeam.score}</span>
+              <span className={cn(
+                "text-3xl font-bold transition-all duration-300",
+                goalSide === "away" 
+                  ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                  : "text-white"
+              )}>
+                {awayTeam.score}
+              </span>
             </div>
           ) : (
             <span className="text-xl font-bold text-slate-600">VS</span>
@@ -133,7 +209,10 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick }: MatchCardP
               <div className="w-10 h-10 rounded-full bg-slate-800" />
             )}
           </div>
-          <span className="text-sm font-semibold text-slate-200 text-center line-clamp-1">
+          <span className={cn(
+            "text-sm font-semibold text-center line-clamp-1 transition-colors",
+            goalSide === "away" ? "text-emerald-400 font-bold" : "text-slate-200"
+          )}>
             {awayTeam.team.shortDisplayName}
           </span>
         </div>

@@ -21,9 +21,13 @@ export const fetchScoreboard = async (
   if (date) params.dates = date;
 
   if (leagueSlug === "all") {
-    // Para a Home, busca apenas os jogos atuais da rodada para manter o payload super leve e rápido.
-    // Assim, não trazemos jogos finalizados há meses toda vez que o polling ocorre.
-    const promises = ALL_LEAGUES_SLUGS.map((slug) =>
+    // Para a Home, busca os jogos atuais da rodada e também do dia seguinte para cobrir
+    // todas as ligas que dividem rodadas entre sexta/sábado/domingo sem payload excessivo.
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().slice(0, 10).replace(/-/g, '');
+
+    const currentRoundPromises = ALL_LEAGUES_SLUGS.map((slug) =>
       axios.get(`${ESPN_BASE_URL}/${slug}/scoreboard`, { 
         params: { ...params } 
       }).then(res => ({
@@ -32,24 +36,35 @@ export const fetchScoreboard = async (
       })).catch(() => null)
     );
 
-    const results = await Promise.all(promises);
-    let allEvents: any[] = [];
+    const tomorrowPromises = ALL_LEAGUES_SLUGS.map((slug) =>
+      axios.get(`${ESPN_BASE_URL}/${slug}/scoreboard`, { 
+        params: { ...params, dates: tomorrowStr } 
+      }).then(res => ({
+        data: res.data,
+        slug
+      })).catch(() => null)
+    );
+
+    const results = await Promise.all([...currentRoundPromises, ...tomorrowPromises]);
+    const eventMap = new Map<string, any>();
 
     results.forEach((res) => {
       if (res && res.data && res.data.events) {
-        // Injeta o league slug e logo dentro de cada evento para o MatchCard identificar
-        const eventsWithLeague = res.data.events.map((e: any) => ({
-          ...e,
-          _customLeagueSlug: res.slug,
-          _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
-        }));
-        allEvents = [...allEvents, ...eventsWithLeague];
+        res.data.events.forEach((e: any) => {
+          if (!eventMap.has(e.id)) {
+            eventMap.set(e.id, {
+              ...e,
+              _customLeagueSlug: res.slug,
+              _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
+            });
+          }
+        });
       }
     });
 
     return {
       leagues: [],
-      events: allEvents
+      events: Array.from(eventMap.values())
     } as unknown as ESPNScoreboardResponse;
   }
 

@@ -43,20 +43,46 @@ export default function Home() {
 
   const liveEvents = events.filter((e) => e.status.type.state === "in");
   
-  // Próximos Jogos (ordem de data crescente, máx 10 na home, 50 na liga)
+  const getEventTimestamp = (event: any): number => {
+    const dateStr = event.competitions?.[0]?.date || event.date;
+    if (!dateStr) return 0;
+    const time = new Date(dateStr).getTime();
+    return isNaN(time) ? 0 : time;
+  };
+
+  // Próximos Jogos (ordem cronológica rigorosa crescente: mais próximos primeiro)
   const isHome = activeLeague === "all";
-  const upcomingLimit = isHome ? 10 : 50;
-  const finishedLimit = isHome ? 6 : 50;
+  const upcomingLimit = isHome ? 24 : 50;
+  const finishedLimit = isHome ? 9 : 50;
 
   const upcomingEvents = events
-    .filter((e) => e.status.type.state === "pre")
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter((e) => {
+      if (e.status.type.state !== "pre") return false;
+      // Não exibir jogos adiados ou cancelados no meio dos próximos jogos cronológicos
+      const statusName = e.status.type.name;
+      if (statusName === "STATUS_POSTPONED" || statusName === "STATUS_CANCELED") return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = getEventTimestamp(a);
+      const timeB = getEventTimestamp(b);
+      if (timeA !== timeB) return timeA - timeB;
+      // Desempate estável no mesmo minuto: pelo nome da competição e depois pelo nome do confronto
+      const leagueComp = getLeagueName(a).localeCompare(getLeagueName(b));
+      if (leagueComp !== 0) return leagueComp;
+      return (a.name || "").localeCompare(b.name || "");
+    })
     .slice(0, upcomingLimit);
     
-  // Últimos Jogos (ordem de data decrescente)
+  // Últimos Jogos (ordem cronológica decrescente: mais recentes primeiro)
   const finishedEvents = events
     .filter((e) => e.status.type.state === "post")
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => {
+      const timeA = getEventTimestamp(a);
+      const timeB = getEventTimestamp(b);
+      if (timeA !== timeB) return timeB - timeA;
+      return (a.name || "").localeCompare(b.name || "");
+    })
     .slice(0, finishedLimit);
 
   return (
@@ -144,6 +170,7 @@ export default function Home() {
                           event={event} 
                           leagueName={getLeagueName(event)} 
                           leagueLogo={getLeagueLogo(event)}
+                          isDimmed={true}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
                       ))}
@@ -231,6 +258,7 @@ export default function Home() {
                           event={event} 
                           leagueName={getLeagueName(event)} 
                           leagueLogo={getLeagueLogo(event)}
+                          isDimmed={true}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
                       ))
