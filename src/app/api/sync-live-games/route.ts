@@ -67,6 +67,13 @@ export async function GET(request: Request) {
         console.error("Supabase upsert error:", error);
         throw error;
       }
+    } else {
+      // Keep-alive touch: registra atividade no banco mesmo em horários sem jogos
+      try {
+        await supabase.from('matches').select('id').limit(1);
+      } catch (err) {
+        console.warn("Keep-alive touch warning:", err);
+      }
     }
 
     return NextResponse.json({ 
