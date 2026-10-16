@@ -52,7 +52,7 @@ export default function Home() {
 
   // Próximos Jogos (ordem cronológica rigorosa crescente: mais próximos primeiro)
   const isHome = activeLeague === "all";
-  const upcomingLimit = isHome ? 24 : 50;
+  const upcomingLimit = isHome ? 9 : 50;
   const finishedLimit = isHome ? 9 : 50;
 
   const upcomingEvents = events
