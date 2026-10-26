@@ -510,25 +510,34 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
   // Ordenar por minuto (crescente)
   const sortedEvents = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
 
-  // Filtrar duplicidades redundantes de paralisação no mesmo minuto (ex: "Partida interrompida por hidratação" seguido de "Jogo atrasado")
-  const filteredEvents = sortedEvents.filter((event, index, arr) => {
-    const rawText = (event.text || "").toLowerCase().trim();
-    const clock = event.clock?.displayValue;
+  // Filtrar shadow events e duplicidades redundantes de paralisação e reinício no mesmo minuto
+  const filteredEvents = sortedEvents.filter((e, idx, arr) => {
+    const typeStr = e.type?.type || "";
+    const typeId = String(e.type?.id || "");
+    const isDelayType = typeStr === "start-delay" || typeStr === "end-delay" || typeId === "129" || typeId === "130";
 
-    // Se for um "jogo atrasado" genérico e já existir uma interrupção explicada no mesmo minuto
-    if (rawText === "jogo atrasado" || rawText === "jogo atrasado.") {
-      const hasSpecificInterruption = arr.some(
-        (other, otherIdx) => otherIdx !== index && other.clock?.displayValue === clock && other.text?.toLowerCase().includes("interrompid")
-      );
-      if (hasSpecificInterruption) return false;
-    }
+    if (isDelayType) {
+      // 1. Se este evento não tem texto editorial (text é vazio/undefined),
+      // e já existe outro evento de parada/reinício com texto descritivo no mesmo minuto, descartar o shadow event.
+      if (!e.text || !e.text.trim()) {
+        const hasBetterSibling = arr.some((other, oIdx) => 
+          oIdx !== idx && 
+          other.clock?.displayValue === e.clock?.displayValue && 
+          other.text && other.text.trim().length > 0
+        );
+        if (hasBetterSibling) return false;
+      }
 
-    // Se for um "fim do atraso" genérico e já existir "partida recomeça" no mesmo minuto
-    if (rawText === "fim do atraso" || rawText === "fim do atraso.") {
-      const hasSpecificResume = arr.some(
-        (other, otherIdx) => otherIdx !== index && other.clock?.displayValue === clock && other.text?.toLowerCase().includes("recomeça")
-      );
-      if (hasSpecificResume) return false;
+      // 2. Se este evento for de reinício (Fim do atraso / Partida reiniciada) e já houver outro evento dizendo "recomeça" no mesmo minuto
+      const currentText = (e.text || e.type?.text || "").toLowerCase();
+      if (currentText.includes("atraso") || currentText.includes("reiniciad") || typeId === "130" || typeStr === "end-delay") {
+        const hasRecomeca = arr.some((other, oIdx) => 
+          oIdx !== idx && 
+          other.clock?.displayValue === e.clock?.displayValue && 
+          (other.text || other.type?.text || "").toLowerCase().includes("recomeça")
+        );
+        if (hasRecomeca) return false;
+      }
     }
 
     return true;
