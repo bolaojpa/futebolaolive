@@ -134,25 +134,33 @@ function MatchSummaryContent({ data }: { data: any }) {
     }).replace(", ", " às ");
   }
 
+  const homeEvents = parseTeamIncidents(data?.keyEvents, home?.id, home?.team?.name);
+  const awayEvents = parseTeamIncidents(data?.keyEvents, away?.id, away?.team?.name);
+
   return (
-    <div className="space-y-6">
-      {/* Placar Gigante */}
-      <div className="flex justify-between items-center bg-slate-950 p-6 rounded-xl border border-slate-800">
-        <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" />
-        <div className="flex flex-col items-center px-4 gap-1.5">
-          {isHalftime ? (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              Intervalo
-            </span>
-          ) : showShootoutScores ? (
-            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-              Pên: {homeShootout} - {awayShootout}
-            </span>
-          ) : null}
-          <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
+    <div className="space-y-5">
+      {/* Placar Gigante com Resumo de Eventos */}
+      <div className="bg-slate-950 p-4 md:p-5 rounded-xl border border-slate-800 shadow-sm">
+        <div className="flex justify-between items-center">
+          <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" />
+          <div className="flex flex-col items-center px-4 gap-1.5">
+            {isHalftime ? (
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Intervalo
+              </span>
+            ) : showShootoutScores ? (
+              <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+                Pên: {homeShootout} - {awayShootout}
+              </span>
+            ) : null}
+            <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
+          </div>
+          <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" />
         </div>
-        <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" />
+
+        {/* Resumo compacto de Gols e Cartões */}
+        <TeamEventsSummary homeEvents={homeEvents} awayEvents={awayEvents} />
       </div>
 
       {/* Tabs */}
@@ -182,6 +190,179 @@ function MatchSummaryContent({ data }: { data: any }) {
         {activeTab === "resumo" && <TimelineTab keyEvents={data.keyEvents} matchState={matchState} />}
         {activeTab === "estatisticas" && <StatsTab boxscore={data.boxscore} homeId={home?.id} awayId={away?.id} matchState={matchState} />}
         {activeTab === "escalacoes" && <RostersTab rosters={data.rosters} homeId={home?.id} awayId={away?.id} matchState={matchState} />}
+      </div>
+    </div>
+  );
+}
+
+interface TeamIncidents {
+  goals: { player: string; minutes: string[] }[];
+  redCards: { player: string; minutes: string[] }[];
+  yellowCards: { player: string; minutes: string[] }[];
+}
+
+function extractAthleteName(e: any): string {
+  if (e.participants?.[0]?.athlete?.displayName) {
+    return e.participants[0].athlete.displayName;
+  }
+  if (e.participants?.[0]?.athlete?.shortName) {
+    return e.participants[0].athlete.shortName;
+  }
+  if (e.text) {
+    const parts = e.text.split(".");
+    for (const part of parts) {
+      const m = part.match(/([^(\n]+?)\s*\(/);
+      if (m && m[1]?.trim() && !m[1].toLowerCase().includes("gol") && !m[1].toLowerCase().includes("substituição")) {
+        return m[1].trim();
+      }
+    }
+    const fallbackMatch = e.text.match(/^([^(\n]+?)\s*\(/);
+    if (fallbackMatch && fallbackMatch[1]?.trim()) {
+      return fallbackMatch[1].trim();
+    }
+  }
+  return "Jogador";
+}
+
+function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamName?: string): TeamIncidents {
+  if (!keyEvents || !Array.isArray(keyEvents)) {
+    return { goals: [], redCards: [], yellowCards: [] };
+  }
+
+  const goalsMap = new Map<string, string[]>();
+  const redCardsMap = new Map<string, string[]>();
+  const yellowCardsMap = new Map<string, string[]>();
+
+  const sorted = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
+
+  for (const e of sorted) {
+    if (e.shootout === true || (e.penaltyKick && (e.clock?.value ?? 0) > 5400)) {
+      continue;
+    }
+
+    const isTeamEvent = 
+      e.team?.id === teamId ||
+      (teamName && e.team?.displayName?.toLowerCase() === teamName.toLowerCase()) ||
+      (!e.team?.id && teamName && e.text?.toLowerCase().includes(`(${teamName.toLowerCase()})`));
+
+    if (!isTeamEvent) continue;
+
+    const isGoal = 
+      e.scoringPlay === true || 
+      e.type?.type?.startsWith("goal") || 
+      e.type?.type === "penalty---scored" || 
+      e.type?.id === "70" || 
+      e.type?.id === "98" || 
+      e.type?.id === "173";
+
+    const isYellow = 
+      e.type?.type === "yellow-card" || 
+      e.type?.id === "94" || 
+      e.type?.text?.toLowerCase().includes("amarelo");
+
+    const isRed = 
+      e.type?.type === "red-card" || 
+      e.type?.id === "93" || 
+      e.type?.type === "second-yellow-card" || 
+      e.type?.text?.toLowerCase().includes("vermelho");
+
+    if (!isGoal && !isYellow && !isRed) continue;
+
+    const playerName = extractAthleteName(e);
+    let minute = e.clock?.displayValue || "";
+    if (minute && !minute.endsWith("'")) minute += "'";
+
+    if (isGoal) {
+      const isPenalty = e.type?.type === "penalty---scored" || e.type?.id === "98" || e.text?.toLowerCase().includes("pênalti");
+      const isOwnGoal = e.type?.type === "own-goal" || e.text?.toLowerCase().includes("contra");
+      let tag = "";
+      if (isPenalty) tag = " (P)";
+      if (isOwnGoal) tag = " (GC)";
+      const minWithTag = `${minute}${tag}`.trim();
+
+      const existing = goalsMap.get(playerName) || [];
+      existing.push(minWithTag);
+      goalsMap.set(playerName, existing);
+    } else if (isRed) {
+      const existing = redCardsMap.get(playerName) || [];
+      existing.push(minute);
+      redCardsMap.set(playerName, existing);
+    } else if (isYellow) {
+      const existing = yellowCardsMap.get(playerName) || [];
+      existing.push(minute);
+      yellowCardsMap.set(playerName, existing);
+    }
+  }
+
+  return {
+    goals: Array.from(goalsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
+    redCards: Array.from(redCardsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
+    yellowCards: Array.from(yellowCardsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
+  };
+}
+
+function TeamEventsSummary({ 
+  homeEvents, 
+  awayEvents 
+}: { 
+  homeEvents: TeamIncidents; 
+  awayEvents: TeamIncidents; 
+}) {
+  const homeCount = homeEvents.goals.length + homeEvents.redCards.length + homeEvents.yellowCards.length;
+  const awayCount = awayEvents.goals.length + awayEvents.redCards.length + awayEvents.yellowCards.length;
+
+  if (homeCount === 0 && awayCount === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs">
+      {/* Mandante (Alinhado à esquerda) */}
+      <div className="space-y-1 max-h-24 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+        {homeEvents.goals.map((g, idx) => (
+          <div key={`hg-${idx}`} className="flex items-center gap-1.5 text-slate-200">
+            <span className="text-xs shrink-0">⚽</span>
+            <span className="font-semibold text-white truncate max-w-[125px] sm:max-w-[180px]" title={g.player}>{g.player}</span>
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">{g.minutes.join(", ")}</span>
+          </div>
+        ))}
+        {homeEvents.redCards.map((r, idx) => (
+          <div key={`hr-${idx}`} className="flex items-center gap-1.5 text-rose-300">
+            <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />
+            <span className="font-semibold text-rose-200 truncate max-w-[125px] sm:max-w-[180px]" title={r.player}>{r.player}</span>
+            <span className="text-[10px] text-rose-400/80 font-mono shrink-0">{r.minutes.join(", ")}</span>
+          </div>
+        ))}
+        {homeEvents.yellowCards.map((y, idx) => (
+          <div key={`hy-${idx}`} className="flex items-center gap-1.5 text-amber-300/90">
+            <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />
+            <span className="font-medium text-slate-300 truncate max-w-[125px] sm:max-w-[180px]" title={y.player}>{y.player}</span>
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">{y.minutes.join(", ")}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Visitante (Alinhado à direita) */}
+      <div className="space-y-1 max-h-24 overflow-y-auto pl-1 scrollbar-thin scrollbar-thumb-slate-800">
+        {awayEvents.goals.map((g, idx) => (
+          <div key={`ag-${idx}`} className="flex items-center justify-end gap-1.5 text-slate-200">
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">{g.minutes.join(", ")}</span>
+            <span className="font-semibold text-white truncate max-w-[125px] sm:max-w-[180px]" title={g.player}>{g.player}</span>
+            <span className="text-xs shrink-0">⚽</span>
+          </div>
+        ))}
+        {awayEvents.redCards.map((r, idx) => (
+          <div key={`ar-${idx}`} className="flex items-center justify-end gap-1.5 text-rose-300">
+            <span className="text-[10px] text-rose-400/80 font-mono shrink-0">{r.minutes.join(", ")}</span>
+            <span className="font-semibold text-rose-200 truncate max-w-[125px] sm:max-w-[180px]" title={r.player}>{r.player}</span>
+            <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />
+          </div>
+        ))}
+        {awayEvents.yellowCards.map((y, idx) => (
+          <div key={`ay-${idx}`} className="flex items-center justify-end gap-1.5 text-amber-300/90">
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">{y.minutes.join(", ")}</span>
+            <span className="font-medium text-slate-300 truncate max-w-[125px] sm:max-w-[180px]" title={y.player}>{y.player}</span>
+            <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />
+          </div>
+        ))}
       </div>
     </div>
   );
