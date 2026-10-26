@@ -30,7 +30,11 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
     queryKey: ["matchSummary", leagueSlug, eventId],
     queryFn: () => fetchMatchSummary(leagueSlug, eventId!),
     enabled: !!eventId && isOpen,
-    refetchInterval: 30000, 
+    refetchInterval: (query) => {
+      // Se a partida estiver ao vivo ("in"), atualiza mais rápido (a cada 10s) para pegar gols/cartões
+      const state = query.state.data?.header?.competitions?.[0]?.status?.type?.state;
+      return state === "in" ? 10000 : 30000;
+    },
   });
 
   return (
@@ -195,10 +199,12 @@ function MatchSummaryContent({ data }: { data: any }) {
   );
 }
 
-interface TeamIncidents {
-  goals: { player: string; minutes: string[] }[];
-  redCards: { player: string; minutes: string[] }[];
-  yellowCards: { player: string; minutes: string[] }[];
+interface TeamIncident {
+  id: string;
+  type: "goal" | "yellow-card" | "red-card";
+  player: string;
+  minute: string;
+  clockValue: number;
 }
 
 function extractAthleteName(e: any): string {
@@ -224,15 +230,12 @@ function extractAthleteName(e: any): string {
   return "Jogador";
 }
 
-function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamName?: string): TeamIncidents {
+function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamName?: string): TeamIncident[] {
   if (!keyEvents || !Array.isArray(keyEvents)) {
-    return { goals: [], redCards: [], yellowCards: [] };
+    return [];
   }
 
-  const goalsMap = new Map<string, string[]>();
-  const redCardsMap = new Map<string, string[]>();
-  const yellowCardsMap = new Map<string, string[]>();
-
+  const incidents: TeamIncident[] = [];
   const sorted = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
 
   for (const e of sorted) {
@@ -272,95 +275,115 @@ function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamNa
     let minute = e.clock?.displayValue || "";
     if (minute && !minute.endsWith("'")) minute += "'";
 
+    const clockValue = e.clock?.value ?? 0;
+
     if (isGoal) {
       const isPenalty = e.type?.type === "penalty---scored" || e.type?.id === "98" || e.text?.toLowerCase().includes("pênalti");
       const isOwnGoal = e.type?.type === "own-goal" || e.text?.toLowerCase().includes("contra");
       let tag = "";
       if (isPenalty) tag = " (P)";
       if (isOwnGoal) tag = " (GC)";
-      const minWithTag = `${minute}${tag}`.trim();
-
-      const existing = goalsMap.get(playerName) || [];
-      existing.push(minWithTag);
-      goalsMap.set(playerName, existing);
+      incidents.push({
+        id: e.id || `goal-${clockValue}-${playerName}`,
+        type: "goal",
+        player: playerName,
+        minute: `${minute}${tag}`.trim(),
+        clockValue,
+      });
     } else if (isRed) {
-      const existing = redCardsMap.get(playerName) || [];
-      existing.push(minute);
-      redCardsMap.set(playerName, existing);
+      incidents.push({
+        id: e.id || `red-${clockValue}-${playerName}`,
+        type: "red-card",
+        player: playerName,
+        minute,
+        clockValue,
+      });
     } else if (isYellow) {
-      const existing = yellowCardsMap.get(playerName) || [];
-      existing.push(minute);
-      yellowCardsMap.set(playerName, existing);
+      incidents.push({
+        id: e.id || `yellow-${clockValue}-${playerName}`,
+        type: "yellow-card",
+        player: playerName,
+        minute,
+        clockValue,
+      });
     }
   }
 
-  return {
-    goals: Array.from(goalsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
-    redCards: Array.from(redCardsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
-    yellowCards: Array.from(yellowCardsMap.entries()).map(([player, minutes]) => ({ player, minutes })),
-  };
+  // Ordenação cronológica estrita por tempo de jogo
+  return incidents.sort((a, b) => a.clockValue - b.clockValue);
 }
 
 function TeamEventsSummary({ 
   homeEvents, 
   awayEvents 
 }: { 
-  homeEvents: TeamIncidents; 
-  awayEvents: TeamIncidents; 
+  homeEvents: TeamIncident[]; 
+  awayEvents: TeamIncident[]; 
 }) {
-  const homeCount = homeEvents.goals.length + homeEvents.redCards.length + homeEvents.yellowCards.length;
-  const awayCount = awayEvents.goals.length + awayEvents.redCards.length + awayEvents.yellowCards.length;
-
-  if (homeCount === 0 && awayCount === 0) return null;
+  if (homeEvents.length === 0 && awayEvents.length === 0) return null;
 
   return (
     <div className="mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs">
-      {/* Mandante (Alinhado à esquerda) */}
+      {/* Mandante (Alinhado à esquerda, em ordem cronológica) */}
       <div className="space-y-1 max-h-24 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-        {homeEvents.goals.map((g, idx) => (
-          <div key={`hg-${idx}`} className="flex items-center gap-1.5 text-slate-200">
-            <span className="text-xs shrink-0">⚽</span>
-            <span className="font-semibold text-white truncate max-w-[125px] sm:max-w-[180px]" title={g.player}>{g.player}</span>
-            <span className="text-[10px] text-slate-400 font-mono shrink-0">{g.minutes.join(", ")}</span>
-          </div>
-        ))}
-        {homeEvents.redCards.map((r, idx) => (
-          <div key={`hr-${idx}`} className="flex items-center gap-1.5 text-rose-300">
-            <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />
-            <span className="font-semibold text-rose-200 truncate max-w-[125px] sm:max-w-[180px]" title={r.player}>{r.player}</span>
-            <span className="text-[10px] text-rose-400/80 font-mono shrink-0">{r.minutes.join(", ")}</span>
-          </div>
-        ))}
-        {homeEvents.yellowCards.map((y, idx) => (
-          <div key={`hy-${idx}`} className="flex items-center gap-1.5 text-amber-300/90">
-            <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />
-            <span className="font-medium text-slate-300 truncate max-w-[125px] sm:max-w-[180px]" title={y.player}>{y.player}</span>
-            <span className="text-[10px] text-slate-400 font-mono shrink-0">{y.minutes.join(", ")}</span>
+        {homeEvents.map((item) => (
+          <div key={item.id} className="flex items-center gap-1.5 text-slate-200">
+            {item.type === "goal" && <span className="text-xs shrink-0">⚽</span>}
+            {item.type === "red-card" && <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
+            {item.type === "yellow-card" && <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
+            <span 
+              className={cn(
+                "truncate max-w-[125px] sm:max-w-[180px]",
+                item.type === "goal" 
+                  ? "font-semibold text-white" 
+                  : item.type === "red-card" 
+                  ? "font-semibold text-rose-200" 
+                  : "font-medium text-slate-300"
+              )} 
+              title={item.player}
+            >
+              {item.player}
+            </span>
+            <span 
+              className={cn(
+                "text-[10px] font-mono shrink-0",
+                item.type === "red-card" ? "text-rose-400/80" : "text-slate-400"
+              )}
+            >
+              {item.minute}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Visitante (Alinhado à direita) */}
+      {/* Visitante (Alinhado à direita, em ordem cronológica) */}
       <div className="space-y-1 max-h-24 overflow-y-auto pl-1 scrollbar-thin scrollbar-thumb-slate-800">
-        {awayEvents.goals.map((g, idx) => (
-          <div key={`ag-${idx}`} className="flex items-center justify-end gap-1.5 text-slate-200">
-            <span className="text-[10px] text-slate-400 font-mono shrink-0">{g.minutes.join(", ")}</span>
-            <span className="font-semibold text-white truncate max-w-[125px] sm:max-w-[180px]" title={g.player}>{g.player}</span>
-            <span className="text-xs shrink-0">⚽</span>
-          </div>
-        ))}
-        {awayEvents.redCards.map((r, idx) => (
-          <div key={`ar-${idx}`} className="flex items-center justify-end gap-1.5 text-rose-300">
-            <span className="text-[10px] text-rose-400/80 font-mono shrink-0">{r.minutes.join(", ")}</span>
-            <span className="font-semibold text-rose-200 truncate max-w-[125px] sm:max-w-[180px]" title={r.player}>{r.player}</span>
-            <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />
-          </div>
-        ))}
-        {awayEvents.yellowCards.map((y, idx) => (
-          <div key={`ay-${idx}`} className="flex items-center justify-end gap-1.5 text-amber-300/90">
-            <span className="text-[10px] text-slate-400 font-mono shrink-0">{y.minutes.join(", ")}</span>
-            <span className="font-medium text-slate-300 truncate max-w-[125px] sm:max-w-[180px]" title={y.player}>{y.player}</span>
-            <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />
+        {awayEvents.map((item) => (
+          <div key={item.id} className="flex items-center justify-end gap-1.5 text-slate-200">
+            <span 
+              className={cn(
+                "text-[10px] font-mono shrink-0",
+                item.type === "red-card" ? "text-rose-400/80" : "text-slate-400"
+              )}
+            >
+              {item.minute}
+            </span>
+            <span 
+              className={cn(
+                "truncate max-w-[125px] sm:max-w-[180px]",
+                item.type === "goal" 
+                  ? "font-semibold text-white" 
+                  : item.type === "red-card" 
+                  ? "font-semibold text-rose-200" 
+                  : "font-medium text-slate-300"
+              )} 
+              title={item.player}
+            >
+              {item.player}
+            </span>
+            {item.type === "goal" && <span className="text-xs shrink-0">⚽</span>}
+            {item.type === "red-card" && <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
+            {item.type === "yellow-card" && <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
           </div>
         ))}
       </div>
