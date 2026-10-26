@@ -447,6 +447,15 @@ function getTimelineEventDetails(event: any) {
     mainText = "Início da partida.";
   }
 
+  // Correção de más traduções de "Delay in match" e "Delay over" da API
+  mainText = mainText
+    .replace(/^Jogo atrasado\b/i, "Jogo paralisado")
+    .replace(/\bjogo atrasado\b/gi, "jogo paralisado")
+    .replace(/^Partida atrasada\b/i, "Partida paralisada")
+    .replace(/\bpartida atrasada\b/gi, "partida paralisada")
+    .replace(/^Fim do atraso\b/i, "Partida reiniciada")
+    .replace(/\bfim do atraso\b/gi, "partida reiniciada");
+
   // Determinar label do relógio
   const clockDisplay = event.clock?.displayValue?.trim() || "";
   let clockLabel = "";
@@ -468,6 +477,16 @@ function getTimelineEventDetails(event: any) {
     icon = "🏁";
   } else if (isShootout || event.scoringPlay || typeStr.startsWith("goal")) {
     icon = "⚽";
+  } else if (typeStr === "yellow-card" || typeId === "94" || typeText.includes("amarelo")) {
+    icon = "🟨";
+  } else if (typeStr === "red-card" || typeId === "93" || typeText.includes("vermelho")) {
+    icon = "🟥";
+  } else if (typeStr === "substitution" || typeId === "76" || typeText.includes("substituição")) {
+    icon = "🔄";
+  } else if (mainText.toLowerCase().includes("paralisad") || mainText.toLowerCase().includes("interrompid")) {
+    icon = "⏸️";
+  } else if (mainText.toLowerCase().includes("recomeça") || mainText.toLowerCase().includes("reiniciad")) {
+    icon = "▶️";
   }
 
   return {
@@ -491,9 +510,33 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
   // Ordenar por minuto (crescente)
   const sortedEvents = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
 
+  // Filtrar duplicidades redundantes de paralisação no mesmo minuto (ex: "Partida interrompida por hidratação" seguido de "Jogo atrasado")
+  const filteredEvents = sortedEvents.filter((event, index, arr) => {
+    const rawText = (event.text || "").toLowerCase().trim();
+    const clock = event.clock?.displayValue;
+
+    // Se for um "jogo atrasado" genérico e já existir uma interrupção explicada no mesmo minuto
+    if (rawText === "jogo atrasado" || rawText === "jogo atrasado.") {
+      const hasSpecificInterruption = arr.some(
+        (other, otherIdx) => otherIdx !== index && other.clock?.displayValue === clock && other.text?.toLowerCase().includes("interrompid")
+      );
+      if (hasSpecificInterruption) return false;
+    }
+
+    // Se for um "fim do atraso" genérico e já existir "partida recomeça" no mesmo minuto
+    if (rawText === "fim do atraso" || rawText === "fim do atraso.") {
+      const hasSpecificResume = arr.some(
+        (other, otherIdx) => otherIdx !== index && other.clock?.displayValue === clock && other.text?.toLowerCase().includes("recomeça")
+      );
+      if (hasSpecificResume) return false;
+    }
+
+    return true;
+  });
+
   return (
     <div className="space-y-3">
-      {sortedEvents.map((event, idx) => {
+      {filteredEvents.map((event, idx) => {
         const details = getTimelineEventDetails(event);
 
         if (details.isPeriodEvent) {
