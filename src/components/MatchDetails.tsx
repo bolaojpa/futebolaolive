@@ -411,6 +411,74 @@ function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: str
 
 // ---- TABS COMPONENTS ----
 
+function getTimelineEventDetails(event: any) {
+  const typeStr = event.type?.type || "";
+  const typeId = String(event.type?.id || "");
+  const typeText = (event.type?.text || "").toLowerCase();
+  const isShootout = event.shootout === true || (event.penaltyKick && (event.clock?.value ?? 0) > 5400);
+
+  const isKickoff = typeStr === "kickoff" || typeId === "80" || typeText.includes("começo") || typeText.includes("inicio") || typeText.includes("início");
+  const isHalftime = typeStr === "halftime" || typeId === "81" || typeText.includes("intervalo");
+  const isStart2ndHalf = typeStr === "start-2nd-half" || typeId === "82" || typeText.includes("começo do 2º") || typeText.includes("início do 2º") || typeText.includes("inicio do 2º");
+  const isEndRegularTime = typeStr === "end-regular-time" || typeId === "83" || typeText.includes("fim do tempo regulamentar") || typeText.includes("fim do segundo tempo") || typeText.includes("fim de jogo");
+  const isExtraTimeStart = typeStr === "start-extra-time" || typeText.includes("início da prorrogação");
+  const isExtraTimeHalf = typeStr === "halftime-extra-time" || typeText.includes("intervalo da prorrogação");
+  const isExtraTimeEnd = typeStr === "end-extra-time" || typeText.includes("fim da prorrogação");
+  const isShootoutStart = typeStr === "shootout-start" || typeText.includes("disputa de pênaltis");
+
+  const isPeriodEvent = isKickoff || isHalftime || isStart2ndHalf || isEndRegularTime || isExtraTimeStart || isExtraTimeHalf || isExtraTimeEnd || isShootoutStart;
+
+  // Determinar texto principal descritivo
+  let mainText = event.text?.trim() || "";
+  if (!mainText) {
+    if (isKickoff) mainText = "Início da partida.";
+    else if (isHalftime) mainText = "Fim do primeiro tempo / Intervalo.";
+    else if (isStart2ndHalf) mainText = "Início do segundo tempo.";
+    else if (isEndRegularTime) mainText = "Fim do segundo tempo / Fim de jogo.";
+    else if (isExtraTimeStart) mainText = "Início da prorrogação.";
+    else if (isExtraTimeHalf) mainText = "Intervalo da prorrogação.";
+    else if (isExtraTimeEnd) mainText = "Fim da prorrogação.";
+    else if (isShootoutStart) mainText = "Início da disputa de pênaltis.";
+    else if (event.type?.text) mainText = event.type.text;
+  }
+
+  // Se o texto for apenas "Começo" ou "Começo.", substituir por "Início da partida"
+  if (mainText.toLowerCase() === "começo" || mainText.toLowerCase() === "começo.") {
+    mainText = "Início da partida.";
+  }
+
+  // Determinar label do relógio
+  const clockDisplay = event.clock?.displayValue?.trim() || "";
+  let clockLabel = "";
+  if (isShootout) {
+    clockLabel = "⚽ Pên";
+  } else if (isKickoff) {
+    clockLabel = clockDisplay ? (clockDisplay.endsWith("'") ? clockDisplay : `${clockDisplay}'`) : "1'";
+  } else if (clockDisplay) {
+    clockLabel = clockDisplay.endsWith("'") ? clockDisplay : `${clockDisplay}'`;
+  } else {
+    clockLabel = "⏱️";
+  }
+
+  // Ícone visual
+  let icon = "⏱️";
+  if (isHalftime || isExtraTimeHalf) {
+    icon = "☕";
+  } else if (isEndRegularTime || isExtraTimeEnd) {
+    icon = "🏁";
+  } else if (isShootout || event.scoringPlay || typeStr.startsWith("goal")) {
+    icon = "⚽";
+  }
+
+  return {
+    isPeriodEvent,
+    isShootout,
+    clockLabel,
+    mainText,
+    icon,
+  };
+}
+
 function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?: string }) {
   if (matchState === "pre") {
     return <div className="text-center text-slate-500 py-8">A partida ainda não começou.</div>;
@@ -421,40 +489,46 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
   }
 
   // Ordenar por minuto (crescente)
-  const sortedEvents = [...keyEvents].sort((a, b) => a.clock?.value - b.clock?.value);
+  const sortedEvents = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {sortedEvents.map((event, idx) => {
-        const isShootout = event.shootout === true || (event.penaltyKick && event.clock?.value > 5400);
-        const clockDisplay = event.clock?.displayValue;
-        const clockLabel = isShootout ? "⚽ Pên" : (clockDisplay ? `${clockDisplay}'` : "⏱️");
-        
-        let shortText = event.shortText?.trim();
-        // Corrige erro da API da ESPN PT-BR onde a frase corta em "aos"
-        if (shortText && shortText.toLowerCase().endsWith("aos")) {
-          shortText = `${shortText} ${clockDisplay || "0"}'`;
+        const details = getTimelineEventDetails(event);
+
+        if (details.isPeriodEvent) {
+          return (
+            <div 
+              key={event.id || `period-${idx}`}
+              className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-slate-800/40 border border-slate-700/50 text-slate-300 font-semibold text-xs tracking-wide"
+            >
+              <span className="flex items-center gap-2">
+                <span>{details.icon}</span>
+                <span>{details.mainText}</span>
+              </span>
+              <span className="text-slate-400 font-mono text-[11px]">{details.clockLabel}</span>
+            </div>
+          );
         }
 
         return (
           <div 
             key={event.id || idx} 
             className={cn(
-              "flex items-start gap-4 p-3 rounded-lg transition-colors",
-              isShootout 
+              "flex items-start gap-3 p-3 rounded-lg transition-colors",
+              details.isShootout 
                 ? "bg-slate-800/80 border border-amber-500/30 shadow-sm" 
                 : "bg-slate-800/50"
             )}
           >
             <div className={cn(
-              "w-14 text-right font-bold shrink-0",
-              isShootout ? "text-amber-400 text-xs mt-0.5" : "text-slate-400"
+              "w-14 text-right font-bold shrink-0 text-xs mt-0.5",
+              details.isShootout ? "text-amber-400" : "text-slate-400 font-mono"
             )}>
-              {clockLabel}
+              {details.clockLabel}
             </div>
-            <div>
-              <p className="text-sm font-medium text-slate-200">{event.text}</p>
-              {shortText && <p className="text-xs text-slate-400 mt-1">{shortText}</p>}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-200 leading-snug">{details.mainText}</p>
             </div>
           </div>
         );
