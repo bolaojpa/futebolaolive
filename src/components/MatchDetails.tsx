@@ -117,10 +117,12 @@ function MatchSummaryContent({ data }: { data: any }) {
   const awayShootout = away?.shootoutScore;
   const showShootoutScores = hasShootout && homeShootout !== undefined && awayShootout !== undefined;
 
-  // Se for "pre", formata a data para horário de Brasília (24h)
+  // Formatação de statusDisplay
   let statusDisplay = header.status.type.detail;
   if (isHalftime) {
     statusDisplay = "Intervalo";
+  } else if (matchState === "post" && (hasShootout || statusDisplay?.toLowerCase().includes("pen"))) {
+    statusDisplay = "Fim de jogo";
   } else if (matchState === "pre" && header.date) {
     statusDisplay = new Date(header.date).toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",
@@ -136,13 +138,7 @@ function MatchSummaryContent({ data }: { data: any }) {
     <div className="space-y-6">
       {/* Placar Gigante */}
       <div className="flex justify-between items-center bg-slate-950 p-6 rounded-xl border border-slate-800">
-        <TeamDisplay 
-          team={home?.team} 
-          score={home?.score} 
-          shootoutScore={showShootoutScores ? homeShootout : undefined}
-          isPreMatch={matchState === "pre"} 
-          align="left" 
-        />
+        <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" />
         <div className="flex flex-col items-center px-4 gap-1.5">
           {isHalftime ? (
             <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
@@ -150,19 +146,13 @@ function MatchSummaryContent({ data }: { data: any }) {
               Intervalo
             </span>
           ) : showShootoutScores ? (
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-              Pênaltis: {homeShootout} - {awayShootout}
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              Pên: {homeShootout} - {awayShootout}
             </span>
           ) : null}
           <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
         </div>
-        <TeamDisplay 
-          team={away?.team} 
-          score={away?.score} 
-          shootoutScore={showShootoutScores ? awayShootout : undefined}
-          isPreMatch={matchState === "pre"} 
-          align="right" 
-        />
+        <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" />
       </div>
 
       {/* Tabs */}
@@ -197,21 +187,9 @@ function MatchSummaryContent({ data }: { data: any }) {
   );
 }
 
-function TeamDisplay({ 
-  team, 
-  score, 
-  shootoutScore, 
-  isPreMatch, 
-  align 
-}: { 
-  team: any; 
-  score: string; 
-  shootoutScore?: number; 
-  isPreMatch?: boolean; 
-  align: "left" | "right" 
-}) {
+function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: string; isPreMatch?: boolean; align: "left" | "right" }) {
   return (
-    <div className={`flex flex-col items-center gap-2 flex-1`}>
+    <div className={`flex flex-col items-center gap-3 flex-1`}>
       <div className="w-16 h-16 relative flex items-center justify-center">
         {team?.logos?.[0]?.href ? (
            <img src={team?.logos?.[0]?.href} alt={team?.name} className="w-16 h-16 object-contain" />
@@ -222,19 +200,7 @@ function TeamDisplay({
       <div className="text-center">
         <span className="block text-sm font-bold text-slate-100">{team?.shortDisplayName || team?.name}</span>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-4xl font-black text-white">{isPreMatch ? "-" : (score || "0")}</span>
-        {shootoutScore !== undefined && (
-          <span className="text-lg font-bold text-amber-400" title="Gols nos pênaltis">
-            ({shootoutScore})
-          </span>
-        )}
-      </div>
-      {shootoutScore !== undefined && (
-        <span className="text-[11px] font-semibold text-amber-400/90 -mt-1">
-          {shootoutScore} nos pênaltis
-        </span>
-      )}
+      <span className="text-4xl font-black text-white">{isPreMatch ? "-" : (score || "0")}</span>
     </div>
   );
 }

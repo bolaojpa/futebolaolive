@@ -236,7 +236,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
           )}
           {isFinished && (
             <span className="text-xs font-medium text-slate-500">
-              {showShootoutScores ? `${formattedDate} | Fim (Pên)` : `${formattedDate} | Fim`}
+              {formattedDate} | Fim
             </span>
           )}
           {isScheduled && renderScheduledStatus()}
@@ -266,7 +266,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         <div className="flex flex-col items-center justify-center px-4 flex-1">
           {!isScheduled ? (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className={cn(
                   "text-3xl font-bold transition-all duration-300",
                   goalSide === "home" 
@@ -275,17 +275,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
                 )}>
                   {homeTeam.score}
                 </span>
-                {showShootoutScores && (
-                  <span className="text-base font-black text-amber-400" title="Gols nos pênaltis">
-                    ({homeShootout})
-                  </span>
-                )}
                 <span className="text-slate-600 font-bold">-</span>
-                {showShootoutScores && (
-                  <span className="text-base font-black text-amber-400" title="Gols nos pênaltis">
-                    ({awayShootout})
-                  </span>
-                )}
                 <span className={cn(
                   "text-3xl font-bold transition-all duration-300",
                   goalSide === "away" 
@@ -296,8 +286,8 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
                 </span>
               </div>
               {showShootoutScores && (
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mt-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Pênaltis: {homeShootout} - {awayShootout}
+                <span className="text-[11px] font-bold text-amber-400 mt-1">
+                  Pên: {homeShootout} - {awayShootout}
                 </span>
               )}
             </div>
