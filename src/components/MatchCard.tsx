@@ -22,6 +22,30 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
   const isFinished = status.type.state === "post";
   const isScheduled = status.type.state === "pre";
 
+  // Identificação de Intervalo no jogo ao vivo
+  const isHalftime = 
+    status.type.name === "STATUS_HALFTIME" ||
+    status.type.id === "2" ||
+    status.type.shortDetail === "INT" ||
+    status.type.shortDetail === "HT" ||
+    status.type.detail?.toLowerCase().includes("intervalo") ||
+    status.type.shortDetail?.toLowerCase().includes("intervalo") ||
+    status.type.description?.toLowerCase().includes("intervalo") ||
+    status.type.description?.toLowerCase().includes("halftime") ||
+    status.type.detail?.toLowerCase().includes("halftime");
+
+  // Identificação de disputa de Pênaltis
+  const hasShootout = 
+    (homeTeam.shootoutScore !== undefined && awayTeam.shootoutScore !== undefined) ||
+    status.type.name?.includes("PEN") ||
+    status.type.description?.toLowerCase().includes("penalt") ||
+    status.type.detail?.toLowerCase().includes("pen") ||
+    status.type.shortDetail?.toLowerCase().includes("pen");
+
+  const homeShootout = homeTeam.shootoutScore;
+  const awayShootout = awayTeam.shootoutScore;
+  const showShootoutScores = hasShootout && homeShootout !== undefined && awayShootout !== undefined;
+
   // Prevenção de hidratação e relógio ao vivo para contagem regressiva
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date>(() => new Date());
@@ -190,22 +214,29 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         </span>
         <div className="flex items-center gap-2">
           {isLive && (
-            <span className={cn(
-              "flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full transition-colors",
-              goalAlert 
-                ? "bg-emerald-500 text-slate-950 font-black" 
-                : "text-rose-500 bg-rose-500/10"
-            )}>
+            isHalftime ? (
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Intervalo
+              </span>
+            ) : (
               <span className={cn(
-                "w-1.5 h-1.5 rounded-full animate-pulse",
-                goalAlert ? "bg-slate-950" : "bg-rose-500"
-              )} />
-              {status.displayClock && status.displayClock !== "0'" ? status.displayClock : status.type.shortDetail}
-            </span>
+                "flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full transition-colors",
+                goalAlert 
+                  ? "bg-emerald-500 text-slate-950 font-black" 
+                  : "text-rose-500 bg-rose-500/10"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full animate-pulse",
+                  goalAlert ? "bg-slate-950" : "bg-rose-500"
+                )} />
+                {status.displayClock && status.displayClock !== "0'" ? status.displayClock : (status.type.shortDetail || "Ao Vivo")}
+              </span>
+            )
           )}
           {isFinished && (
             <span className="text-xs font-medium text-slate-500">
-              {formattedDate} | Fim
+              {showShootoutScores ? `${formattedDate} | Fim (Pên)` : `${formattedDate} | Fim`}
             </span>
           )}
           {isScheduled && renderScheduledStatus()}
@@ -234,24 +265,41 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         {/* Score Area */}
         <div className="flex flex-col items-center justify-center px-4 flex-1">
           {!isScheduled ? (
-            <div className="flex items-center gap-3">
-              <span className={cn(
-                "text-3xl font-bold transition-all duration-300",
-                goalSide === "home" 
-                  ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
-                  : "text-white"
-              )}>
-                {homeTeam.score}
-              </span>
-              <span className="text-slate-600">-</span>
-              <span className={cn(
-                "text-3xl font-bold transition-all duration-300",
-                goalSide === "away" 
-                  ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
-                  : "text-white"
-              )}>
-                {awayTeam.score}
-              </span>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-3xl font-bold transition-all duration-300",
+                  goalSide === "home" 
+                    ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                    : "text-white"
+                )}>
+                  {homeTeam.score}
+                </span>
+                {showShootoutScores && (
+                  <span className="text-base font-black text-amber-400" title="Gols nos pênaltis">
+                    ({homeShootout})
+                  </span>
+                )}
+                <span className="text-slate-600 font-bold">-</span>
+                {showShootoutScores && (
+                  <span className="text-base font-black text-amber-400" title="Gols nos pênaltis">
+                    ({awayShootout})
+                  </span>
+                )}
+                <span className={cn(
+                  "text-3xl font-bold transition-all duration-300",
+                  goalSide === "away" 
+                    ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                    : "text-white"
+                )}>
+                  {awayTeam.score}
+                </span>
+              </div>
+              {showShootoutScores && (
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mt-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  Pênaltis: {homeShootout} - {awayShootout}
+                </span>
+              )}
             </div>
           ) : (
             <span className="text-xl font-bold text-slate-600">VS</span>

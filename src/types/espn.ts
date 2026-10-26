@@ -52,6 +52,8 @@ export interface ESPNCompetitor {
   winner?: boolean;
   team: ESPNTeam;
   score: string;
+  shootoutScore?: number;
+  aggregateScore?: number;
   statistics?: { name: string; displayValue: string }[];
 }
 

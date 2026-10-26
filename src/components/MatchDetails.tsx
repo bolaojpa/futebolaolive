@@ -93,9 +93,35 @@ function MatchSummaryContent({ data }: { data: any }) {
   const away = header.competitors.find((c: any) => c.homeAway === "away");
   const matchState = header.status.type.state; // "pre", "in", "post"
   
+  // Identificação de Intervalo no modal
+  const isHalftime = 
+    header.status.type.name === "STATUS_HALFTIME" ||
+    header.status.type.id === "2" ||
+    header.status.type.shortDetail === "INT" ||
+    header.status.type.shortDetail === "HT" ||
+    header.status.type.detail?.toLowerCase().includes("intervalo") ||
+    header.status.type.shortDetail?.toLowerCase().includes("intervalo") ||
+    header.status.type.description?.toLowerCase().includes("intervalo") ||
+    header.status.type.description?.toLowerCase().includes("halftime") ||
+    header.status.type.detail?.toLowerCase().includes("halftime");
+
+  // Identificação de Pênaltis no modal
+  const hasShootout = 
+    (home?.shootoutScore !== undefined && away?.shootoutScore !== undefined) ||
+    header.status.type.name?.includes("PEN") ||
+    header.status.type.description?.toLowerCase().includes("penalt") ||
+    header.status.type.detail?.toLowerCase().includes("pen") ||
+    header.status.type.shortDetail?.toLowerCase().includes("pen");
+
+  const homeShootout = home?.shootoutScore;
+  const awayShootout = away?.shootoutScore;
+  const showShootoutScores = hasShootout && homeShootout !== undefined && awayShootout !== undefined;
+
   // Se for "pre", formata a data para horário de Brasília (24h)
   let statusDisplay = header.status.type.detail;
-  if (matchState === "pre" && header.date) {
+  if (isHalftime) {
+    statusDisplay = "Intervalo";
+  } else if (matchState === "pre" && header.date) {
     statusDisplay = new Date(header.date).toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",
       day: "2-digit",
@@ -110,11 +136,33 @@ function MatchSummaryContent({ data }: { data: any }) {
     <div className="space-y-6">
       {/* Placar Gigante */}
       <div className="flex justify-between items-center bg-slate-950 p-6 rounded-xl border border-slate-800">
-        <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" />
-        <div className="flex flex-col items-center px-4">
+        <TeamDisplay 
+          team={home?.team} 
+          score={home?.score} 
+          shootoutScore={showShootoutScores ? homeShootout : undefined}
+          isPreMatch={matchState === "pre"} 
+          align="left" 
+        />
+        <div className="flex flex-col items-center px-4 gap-1.5">
+          {isHalftime ? (
+            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              Intervalo
+            </span>
+          ) : showShootoutScores ? (
+            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              Pênaltis: {homeShootout} - {awayShootout}
+            </span>
+          ) : null}
           <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
         </div>
-        <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" />
+        <TeamDisplay 
+          team={away?.team} 
+          score={away?.score} 
+          shootoutScore={showShootoutScores ? awayShootout : undefined}
+          isPreMatch={matchState === "pre"} 
+          align="right" 
+        />
       </div>
 
       {/* Tabs */}
@@ -149,9 +197,21 @@ function MatchSummaryContent({ data }: { data: any }) {
   );
 }
 
-function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: string; isPreMatch?: boolean; align: "left" | "right" }) {
+function TeamDisplay({ 
+  team, 
+  score, 
+  shootoutScore, 
+  isPreMatch, 
+  align 
+}: { 
+  team: any; 
+  score: string; 
+  shootoutScore?: number; 
+  isPreMatch?: boolean; 
+  align: "left" | "right" 
+}) {
   return (
-    <div className={`flex flex-col items-center gap-3 flex-1`}>
+    <div className={`flex flex-col items-center gap-2 flex-1`}>
       <div className="w-16 h-16 relative flex items-center justify-center">
         {team?.logos?.[0]?.href ? (
            <img src={team?.logos?.[0]?.href} alt={team?.name} className="w-16 h-16 object-contain" />
@@ -162,7 +222,19 @@ function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: str
       <div className="text-center">
         <span className="block text-sm font-bold text-slate-100">{team?.shortDisplayName || team?.name}</span>
       </div>
-      <span className="text-4xl font-black text-white">{isPreMatch ? "-" : (score || "0")}</span>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-4xl font-black text-white">{isPreMatch ? "-" : (score || "0")}</span>
+        {shootoutScore !== undefined && (
+          <span className="text-lg font-bold text-amber-400" title="Gols nos pênaltis">
+            ({shootoutScore})
+          </span>
+        )}
+      </div>
+      {shootoutScore !== undefined && (
+        <span className="text-[11px] font-semibold text-amber-400/90 -mt-1">
+          {shootoutScore} nos pênaltis
+        </span>
+      )}
     </div>
   );
 }
@@ -184,8 +256,9 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
   return (
     <div className="space-y-4">
       {sortedEvents.map((event, idx) => {
+        const isShootout = event.shootout === true || (event.penaltyKick && event.clock?.value > 5400);
         const clockDisplay = event.clock?.displayValue;
-        const clockLabel = clockDisplay ? `${clockDisplay}'` : "⏱️";
+        const clockLabel = isShootout ? "⚽ Pên" : (clockDisplay ? `${clockDisplay}'` : "⏱️");
         
         let shortText = event.shortText?.trim();
         // Corrige erro da API da ESPN PT-BR onde a frase corta em "aos"
@@ -194,13 +267,24 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
         }
 
         return (
-          <div key={event.id || idx} className="flex items-start gap-4 p-3 bg-slate-800/50 rounded-lg">
-            <div className="w-12 text-right font-bold text-slate-400 shrink-0">
+          <div 
+            key={event.id || idx} 
+            className={cn(
+              "flex items-start gap-4 p-3 rounded-lg transition-colors",
+              isShootout 
+                ? "bg-slate-800/80 border border-amber-500/30 shadow-sm" 
+                : "bg-slate-800/50"
+            )}
+          >
+            <div className={cn(
+              "w-14 text-right font-bold shrink-0",
+              isShootout ? "text-amber-400 text-xs mt-0.5" : "text-slate-400"
+            )}>
               {clockLabel}
             </div>
             <div>
               <p className="text-sm font-medium text-slate-200">{event.text}</p>
-              {shortText && <p className="text-xs text-slate-500 mt-1">{shortText}</p>}
+              {shortText && <p className="text-xs text-slate-400 mt-1">{shortText}</p>}
             </div>
           </div>
         );
