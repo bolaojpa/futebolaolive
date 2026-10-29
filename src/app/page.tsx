@@ -19,8 +19,11 @@ export default function Home() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["scoreboard", activeLeague],
     queryFn: () => fetchScoreboard(activeLeague),
-    // Polling a cada 30 segundos com suporte a background
-    refetchInterval: 30000, 
+    // Polling dinâmico: a cada 10s se houver partidas ao vivo (sincronizado com os detalhes), ou 30s nos demais casos
+    refetchInterval: (query) => {
+      const hasLiveMatches = query.state.data?.events?.some((e: any) => e.status.type.state === "in");
+      return hasLiveMatches ? 10000 : 30000;
+    },
     refetchIntervalInBackground: true,
   });
 

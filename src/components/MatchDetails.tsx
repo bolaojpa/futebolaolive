@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMatchSummary } from "@/services/espnApi";
 import { X, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,9 @@ interface MatchDetailsProps {
 }
 
 export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: MatchDetailsProps) {
+  const queryClient = useQueryClient();
+  const prevScoresRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -36,6 +39,20 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
       return state === "in" ? 10000 : 30000;
     },
   });
+
+  // Sincroniza imediatamente o card primário em segundo plano se um gol for detectado no modal detalhado
+  const homeScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "home")?.score;
+  const awayScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "away")?.score;
+
+  useEffect(() => {
+    if (homeScore !== undefined && awayScore !== undefined) {
+      const currentScoreKey = `${homeScore}-${awayScore}`;
+      if (prevScoresRef.current !== null && prevScoresRef.current !== currentScoreKey) {
+        queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+      }
+      prevScoresRef.current = currentScoreKey;
+    }
+  }, [homeScore, awayScore, queryClient]);
 
   return (
     <AnimatePresence>
