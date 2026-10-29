@@ -40,19 +40,57 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
     },
   });
 
-  // Sincroniza imediatamente o card primário em segundo plano se um gol for detectado no modal detalhado
+  // Monitoramento de Gols e VAR no modal em tempo real
+  const [goalAlert, setGoalAlert] = useState<boolean>(false);
+  const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
+  const [varAlert, setVarAlert] = useState<boolean>(false);
+
   const homeScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "home")?.score;
   const awayScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "away")?.score;
+  const isLive = data?.header?.competitions?.[0]?.status?.type?.state === "in";
 
   useEffect(() => {
-    if (homeScore !== undefined && awayScore !== undefined) {
-      const currentScoreKey = `${homeScore}-${awayScore}`;
-      if (prevScoresRef.current !== null && prevScoresRef.current !== currentScoreKey) {
-        queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+    if (isLive && homeScore !== undefined && awayScore !== undefined) {
+      const currHome = parseInt(homeScore, 10) || 0;
+      const currAway = parseInt(awayScore, 10) || 0;
+
+      if (prevScoresRef.current !== null) {
+        const [prevH, prevA] = prevScoresRef.current.split("-").map(Number);
+        if (currHome > prevH) {
+          setVarAlert(false);
+          setGoalAlert(true);
+          setGoalSide("home");
+          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+          const t = setTimeout(() => {
+            setGoalAlert(false);
+            setGoalSide(null);
+          }, 12000);
+          return () => clearTimeout(t);
+        } else if (currAway > prevA) {
+          setVarAlert(false);
+          setGoalAlert(true);
+          setGoalSide("away");
+          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+          const t = setTimeout(() => {
+            setGoalAlert(false);
+            setGoalSide(null);
+          }, 12000);
+          return () => clearTimeout(t);
+        } else if (currHome < prevH || currAway < prevA) {
+          // Placar diminuiu = Gol anulado pelo VAR
+          setGoalAlert(false);
+          setGoalSide(null);
+          setVarAlert(true);
+          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+          const t = setTimeout(() => {
+            setVarAlert(false);
+          }, 12000);
+          return () => clearTimeout(t);
+        }
       }
-      prevScoresRef.current = currentScoreKey;
+      prevScoresRef.current = `${currHome}-${currAway}`;
     }
-  }, [homeScore, awayScore, queryClient]);
+  }, [homeScore, awayScore, isLive, queryClient]);
 
   return (
     <AnimatePresence>
@@ -94,7 +132,12 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
                   <p>Não foi possível carregar os detalhes.</p>
                 </div>
               ) : (
-                <MatchSummaryContent data={data as any} />
+                <MatchSummaryContent 
+                  data={data as any} 
+                  goalAlert={goalAlert}
+                  goalSide={goalSide}
+                  varAlert={varAlert}
+                />
               )}
             </div>
           </motion.div>
@@ -104,7 +147,17 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
   );
 }
 
-function MatchSummaryContent({ data }: { data: any }) {
+function MatchSummaryContent({ 
+  data, 
+  goalAlert, 
+  goalSide, 
+  varAlert 
+}: { 
+  data: any; 
+  goalAlert?: boolean; 
+  goalSide?: "home" | "away" | null; 
+  varAlert?: boolean; 
+}) {
   const [activeTab, setActiveTab] = useState<"resumo" | "estatisticas" | "escalacoes">("resumo");
 
   const header = data?.header?.competitions?.[0];
@@ -161,9 +214,24 @@ function MatchSummaryContent({ data }: { data: any }) {
   return (
     <div className="space-y-5">
       {/* Placar Gigante com Resumo de Eventos */}
-      <div className="bg-slate-950 p-4 md:p-5 rounded-xl border border-slate-800 shadow-sm">
+      <div className={cn(
+        "bg-slate-950 p-4 md:p-5 rounded-xl border border-slate-800 shadow-sm transition-all duration-300 relative",
+        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.35)]",
+        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.35)]"
+      )}>
+        {/* Alerta animado de GOL! ou VAR no Modal */}
+        {goalAlert && (
+          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-4 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-2xl animate-bounce whitespace-nowrap">
+            <span className="text-sm">⚽</span> GOL!
+          </div>
+        )}
+        {varAlert && (
+          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-4 py-0.5 rounded-full bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white font-black text-xs uppercase tracking-wider shadow-2xl animate-bounce whitespace-nowrap">
+            <span>🖥️</span> GOL ANULADO (VAR)
+          </div>
+        )}
         <div className="flex justify-between items-center">
-          <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" />
+          <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" isGoal={goalSide === "home"} />
           <div className="flex flex-col items-center px-4 gap-1.5">
             {isHalftime ? (
               <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
@@ -177,7 +245,7 @@ function MatchSummaryContent({ data }: { data: any }) {
             ) : null}
             <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
           </div>
-          <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" />
+          <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" isGoal={goalSide === "away"} />
         </div>
 
         {/* Resumo compacto de Gols e Cartões */}
@@ -208,7 +276,7 @@ function MatchSummaryContent({ data }: { data: any }) {
 
       {/* Conteúdo das Tabs */}
       <div className="py-2">
-        {activeTab === "resumo" && <TimelineTab keyEvents={data.keyEvents} matchState={matchState} />}
+        {activeTab === "resumo" && <TimelineTab keyEvents={data.keyEvents} commentary={data.commentary} matchState={matchState} />}
         {activeTab === "estatisticas" && <StatsTab boxscore={data.boxscore} homeId={home?.id} awayId={away?.id} matchState={matchState} />}
         {activeTab === "escalacoes" && <RostersTab rosters={data.rosters} homeId={home?.id} awayId={away?.id} matchState={matchState} />}
       </div>
@@ -218,7 +286,7 @@ function MatchSummaryContent({ data }: { data: any }) {
 
 interface TeamIncident {
   id: string;
-  type: "goal" | "yellow-card" | "red-card";
+  type: "goal" | "yellow-card" | "red-card" | "missed-penalty";
   player: string;
   minute: string;
   clockValue: number;
@@ -272,8 +340,15 @@ function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamNa
       e.type?.type?.startsWith("goal") || 
       e.type?.type === "penalty---scored" || 
       e.type?.id === "70" || 
+      e.type?.id === "137" || 
       e.type?.id === "98" || 
       e.type?.id === "173";
+
+    const isMissedPenalty = 
+      e.type?.type === "penalty---missed" || 
+      e.type?.id === "174" || 
+      e.text?.toLowerCase().includes("pênalti perdido") || 
+      e.text?.toLowerCase().includes("perdeu o pênalti");
 
     const isYellow = 
       e.type?.type === "yellow-card" || 
@@ -286,7 +361,7 @@ function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamNa
       e.type?.type === "second-yellow-card" || 
       e.type?.text?.toLowerCase().includes("vermelho");
 
-    if (!isGoal && !isYellow && !isRed) continue;
+    if (!isGoal && !isYellow && !isRed && !isMissedPenalty) continue;
 
     const playerName = extractAthleteName(e);
     let minute = e.clock?.displayValue || "";
@@ -305,6 +380,14 @@ function parseTeamIncidents(keyEvents: any[] | undefined, teamId: string, teamNa
         type: "goal",
         player: playerName,
         minute: `${minute}${tag}`.trim(),
+        clockValue,
+      });
+    } else if (isMissedPenalty) {
+      incidents.push({
+        id: e.id || `missed-pen-${clockValue}-${playerName}`,
+        type: "missed-penalty",
+        player: playerName,
+        minute: `${minute} (Pên. Perdido)`.trim(),
         clockValue,
       });
     } else if (isRed) {
@@ -346,6 +429,7 @@ function TeamEventsSummary({
         {homeEvents.map((item) => (
           <div key={item.id} className="flex items-center gap-1.5 text-slate-200">
             {item.type === "goal" && <span className="text-xs shrink-0">⚽</span>}
+            {item.type === "missed-penalty" && <span className="text-xs shrink-0" title="Pênalti Perdido">🚫⚽</span>}
             {item.type === "red-card" && <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
             {item.type === "yellow-card" && <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
             <span 
@@ -353,6 +437,8 @@ function TeamEventsSummary({
                 "truncate max-w-[125px] sm:max-w-[180px]",
                 item.type === "goal" 
                   ? "font-semibold text-white" 
+                  : item.type === "missed-penalty"
+                  ? "font-medium text-amber-300"
                   : item.type === "red-card" 
                   ? "font-semibold text-rose-200" 
                   : "font-medium text-slate-300"
@@ -390,6 +476,8 @@ function TeamEventsSummary({
                 "truncate max-w-[125px] sm:max-w-[180px]",
                 item.type === "goal" 
                   ? "font-semibold text-white" 
+                  : item.type === "missed-penalty"
+                  ? "font-medium text-amber-300"
                   : item.type === "red-card" 
                   ? "font-semibold text-rose-200" 
                   : "font-medium text-slate-300"
@@ -399,6 +487,7 @@ function TeamEventsSummary({
               {item.player}
             </span>
             {item.type === "goal" && <span className="text-xs shrink-0">⚽</span>}
+            {item.type === "missed-penalty" && <span className="text-xs shrink-0" title="Pênalti Perdido">🚫⚽</span>}
             {item.type === "red-card" && <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
             {item.type === "yellow-card" && <span className="w-2 h-2.5 bg-amber-400 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
           </div>
@@ -408,7 +497,19 @@ function TeamEventsSummary({
   );
 }
 
-function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: string; isPreMatch?: boolean; align: "left" | "right" }) {
+function TeamDisplay({ 
+  team, 
+  score, 
+  isPreMatch, 
+  align, 
+  isGoal 
+}: { 
+  team: any; 
+  score: string; 
+  isPreMatch?: boolean; 
+  align: "left" | "right";
+  isGoal?: boolean;
+}) {
   return (
     <div className={`flex flex-col items-center gap-3 flex-1`}>
       <div className="w-16 h-16 relative flex items-center justify-center">
@@ -419,9 +520,21 @@ function TeamDisplay({ team, score, isPreMatch, align }: { team: any; score: str
         )}
       </div>
       <div className="text-center">
-        <span className="block text-sm font-bold text-slate-100">{team?.shortDisplayName || team?.name}</span>
+        <span className={cn(
+          "block text-sm font-bold transition-colors line-clamp-1",
+          isGoal ? "text-emerald-400 font-black" : "text-slate-100"
+        )}>
+          {team?.shortDisplayName || team?.name}
+        </span>
       </div>
-      <span className="text-4xl font-black text-white">{isPreMatch ? "-" : (score || "0")}</span>
+      <span className={cn(
+        "text-4xl font-black transition-all duration-300",
+        isGoal 
+          ? "text-emerald-400 scale-125 drop-shadow-[0_0_15px_rgba(16,185,129,0.9)]" 
+          : "text-white"
+      )}>
+        {isPreMatch ? "-" : (score || "0")}
+      </span>
     </div>
   );
 }
@@ -486,14 +599,25 @@ function getTimelineEventDetails(event: any) {
     clockLabel = "⏱️";
   }
 
+  const isGoal = isShootout || event.scoringPlay || typeStr.startsWith("goal") || typeId === "70" || typeId === "137";
+  const isMissedPenalty = typeStr.includes("penalty---missed") || typeId === "174" || mainText.toLowerCase().includes("pênalti perdido") || mainText.toLowerCase().includes("perdeu o pênalti");
+  const isVar = typeStr.includes("var") || typeText.includes("var") || typeText.includes("anulado") || mainText.toLowerCase().includes("decisão do var") || mainText.toLowerCase().includes("revisão do var") || mainText.toLowerCase().includes("gol anulado");
+  const isWoodwork = mainText.toLowerCase().includes("trave") || mainText.toLowerCase().includes("travessão");
+
   // Ícone visual
   let icon = "⏱️";
   if (isHalftime || isExtraTimeHalf) {
     icon = "☕";
   } else if (isEndRegularTime || isExtraTimeEnd) {
     icon = "🏁";
-  } else if (isShootout || event.scoringPlay || typeStr.startsWith("goal")) {
+  } else if (isVar) {
+    icon = "🖥️";
+  } else if (isMissedPenalty) {
+    icon = "🚫⚽";
+  } else if (isGoal) {
     icon = "⚽";
+  } else if (isWoodwork) {
+    icon = "🥅";
   } else if (typeStr === "yellow-card" || typeId === "94" || typeText.includes("amarelo")) {
     icon = "🟨";
   } else if (typeStr === "red-card" || typeId === "93" || typeText.includes("vermelho")) {
@@ -509,23 +633,60 @@ function getTimelineEventDetails(event: any) {
   return {
     isPeriodEvent,
     isShootout,
+    isGoal,
+    isVar,
     clockLabel,
     mainText,
     icon,
   };
 }
 
-function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?: string }) {
+function getCommentaryIcon(text: string): string {
+  const t = (text || "").toLowerCase();
+  if (t.includes("gol!") || t.startsWith("gol") || t.includes("marca o gol")) return "⚽";
+  if (t.includes("cartão vermelho") || t.includes("segundo cartão amarelo")) return "🟥";
+  if (t.includes("cartão amarelo")) return "🟨";
+  if (t.includes("substituição")) return "🔄";
+  if (t.includes("var") || t.includes("anulado")) return "🖥️";
+  if (t.includes("pênalti perdido") || t.includes("perdeu o pênalti")) return "🚫⚽";
+  if (t.includes("pênalti") || t.includes("penalidade")) return "🎯";
+  if (t.includes("trave") || t.includes("travessão")) return "🥅";
+  if (t.includes("defesa") || t.includes("defendida")) return "🧤";
+  if (t.includes("escanteio")) return "🚩";
+  if (t.includes("impedimento")) return "🚩";
+  if (t.includes("falta")) return "⚠️";
+  if (t.includes("início") || t.includes("começo")) return "⏱️";
+  if (t.includes("intervalo")) return "☕";
+  if (t.includes("fim")) return "🏁";
+  return "⏱️";
+}
+
+function TimelineTab({ 
+  keyEvents, 
+  commentary, 
+  matchState 
+}: { 
+  keyEvents: any[]; 
+  commentary?: any[]; 
+  matchState?: string; 
+}) {
+  const [timelineMode, setTimelineMode] = useState<"key" | "all">("key");
+
   if (matchState === "pre") {
     return <div className="text-center text-slate-500 py-8">A partida ainda não começou.</div>;
   }
 
-  if (!keyEvents || keyEvents.length === 0) {
-    return <div className="text-center text-slate-500 py-8">Nenhum evento registrado.</div>;
+  const hasKeyEvents = keyEvents && keyEvents.length > 0;
+  const hasCommentary = commentary && commentary.length > 0;
+
+  if (!hasKeyEvents && !hasCommentary) {
+    return <div className="text-center text-slate-500 py-8">Nenhum evento registrado até o momento.</div>;
   }
 
-  // Ordenar por minuto (crescente)
-  const sortedEvents = [...keyEvents].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
+  const activeMode = (!hasKeyEvents && hasCommentary) ? "all" : timelineMode;
+
+  // Ordenar keyEvents por minuto (crescente)
+  const sortedEvents = [...(keyEvents || [])].sort((a, b) => (a.clock?.value ?? 0) - (b.clock?.value ?? 0));
 
   // Filtrar shadow events e duplicidades redundantes de paralisação e reinício no mesmo minuto
   const filteredEvents = sortedEvents.filter((e, idx, arr) => {
@@ -534,8 +695,6 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
     const isDelayType = typeStr === "start-delay" || typeStr === "end-delay" || typeId === "129" || typeId === "130";
 
     if (isDelayType) {
-      // 1. Se este evento não tem texto editorial (text é vazio/undefined),
-      // e já existe outro evento de parada/reinício com texto descritivo no mesmo minuto, descartar o shadow event.
       if (!e.text || !e.text.trim()) {
         const hasBetterSibling = arr.some((other, oIdx) => 
           oIdx !== idx && 
@@ -545,7 +704,6 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
         if (hasBetterSibling) return false;
       }
 
-      // 2. Se este evento for de reinício (Fim do atraso / Partida reiniciada) e já houver outro evento dizendo "recomeça" no mesmo minuto
       const currentText = (e.text || e.type?.text || "").toLowerCase();
       if (currentText.includes("atraso") || currentText.includes("reiniciad") || typeId === "130" || typeStr === "end-delay") {
         const hasRecomeca = arr.some((other, oIdx) => 
@@ -561,47 +719,136 @@ function TimelineTab({ keyEvents, matchState }: { keyEvents: any[], matchState?:
   });
 
   return (
-    <div className="space-y-3">
-      {filteredEvents.map((event, idx) => {
-        const details = getTimelineEventDetails(event);
-
-        if (details.isPeriodEvent) {
-          return (
-            <div 
-              key={event.id || `period-${idx}`}
-              className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-slate-800/40 border border-slate-700/50 text-slate-300 font-semibold text-xs tracking-wide"
-            >
-              <span className="flex items-center gap-2">
-                <span>{details.icon}</span>
-                <span>{details.mainText}</span>
-              </span>
-              <span className="text-slate-400 font-mono text-[11px]">{details.clockLabel}</span>
-            </div>
-          );
-        }
-
-        return (
-          <div 
-            key={event.id || idx} 
+    <div className="space-y-4">
+      {/* Sub-toggle: Principais Lances vs Lance a Lance */}
+      {hasCommentary && hasKeyEvents && (
+        <div className="flex items-center gap-2 pb-1 border-b border-slate-800/60">
+          <button
+            onClick={() => setTimelineMode("key")}
             className={cn(
-              "flex items-start gap-3 p-3 rounded-lg transition-colors",
-              details.isShootout 
-                ? "bg-slate-800/80 border border-amber-500/30 shadow-sm" 
-                : "bg-slate-800/50"
+              "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
+              activeMode === "key"
+                ? "bg-emerald-500 text-slate-950 shadow-sm"
+                : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
             )}
           >
-            <div className={cn(
-              "w-14 text-right font-bold shrink-0 text-xs mt-0.5",
-              details.isShootout ? "text-amber-400" : "text-slate-400 font-mono"
-            )}>
-              {details.clockLabel}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-200 leading-snug">{details.mainText}</p>
-            </div>
-          </div>
-        );
-      })}
+            <span>⚡</span> Principais Lances
+          </button>
+          <button
+            onClick={() => setTimelineMode("all")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
+              activeMode === "all"
+                ? "bg-emerald-500 text-slate-950 shadow-sm"
+                : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
+            )}
+          >
+            <span>📝</span> Lance a Lance ({commentary.length})
+          </button>
+        </div>
+      )}
+
+      {/* Visão de Principais Lances */}
+      {activeMode === "key" && (
+        <div className="space-y-3">
+          {filteredEvents.map((event, idx) => {
+            const details = getTimelineEventDetails(event);
+
+            if (details.isPeriodEvent) {
+              return (
+                <div 
+                  key={event.id || `period-${idx}`}
+                  className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-slate-800/40 border border-slate-700/50 text-slate-300 font-semibold text-xs tracking-wide"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{details.icon}</span>
+                    <span>{details.mainText}</span>
+                  </span>
+                  <span className="text-slate-400 font-mono text-[11px]">{details.clockLabel}</span>
+                </div>
+              );
+            }
+
+            return (
+              <div 
+                key={event.id || idx} 
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-lg transition-colors",
+                  details.isShootout 
+                    ? "bg-slate-800/80 border border-amber-500/30 shadow-sm" 
+                    : details.isGoal
+                    ? "bg-slate-800/80 border border-emerald-500/30 shadow-sm"
+                    : details.isVar
+                    ? "bg-amber-950/20 border border-amber-500/30 shadow-sm"
+                    : "bg-slate-800/50"
+                )}
+              >
+                <div className={cn(
+                  "w-14 text-right font-bold shrink-0 text-xs mt-0.5",
+                  details.isShootout ? "text-amber-400" : details.isGoal ? "text-emerald-400 font-black" : "text-slate-400 font-mono"
+                )}>
+                  {details.clockLabel}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0">{details.icon}</span>
+                    <p className={cn(
+                      "text-sm font-medium leading-snug",
+                      details.isGoal ? "text-white font-semibold" : "text-slate-200"
+                    )}>
+                      {details.mainText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Visão de Lance a Lance Completo */}
+      {activeMode === "all" && hasCommentary && (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+          {commentary.map((c: any, idx: number) => {
+            const icon = getCommentaryIcon(c.text);
+            const isGoal = icon === "⚽";
+            const isVar = icon === "🖥️";
+            const isCard = icon === "🟨" || icon === "🟥";
+
+            return (
+              <div 
+                key={c.sequence ?? idx} 
+                className={cn(
+                  "flex items-start gap-3 p-2.5 rounded-lg border transition-colors",
+                  isGoal 
+                    ? "bg-emerald-950/30 border-emerald-500/40" 
+                    : isVar
+                    ? "bg-amber-950/20 border-amber-500/40"
+                    : isCard
+                    ? "bg-slate-800/70 border-slate-700/60"
+                    : "bg-slate-800/30 border-slate-800/60"
+                )}
+              >
+                <div className={cn(
+                  "w-12 text-right font-mono text-xs font-bold shrink-0 mt-0.5",
+                  isGoal ? "text-emerald-400 font-black" : "text-slate-400"
+                )}>
+                  {c.time?.displayValue || "--"}
+                </div>
+                <div className="flex-1 min-w-0 flex items-start gap-2">
+                  <span className="shrink-0 text-sm">{icon}</span>
+                  <p className={cn(
+                    "text-xs leading-relaxed",
+                    isGoal ? "text-white font-semibold" : "text-slate-200"
+                  )}>
+                    {c.text}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

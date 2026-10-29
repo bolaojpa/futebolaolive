@@ -59,9 +59,10 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
     return () => clearInterval(timer);
   }, [isScheduled]);
 
-  // Monitoramento de Gols em tempo real
+  // Monitoramento de Gols e VAR em tempo real
   const [goalAlert, setGoalAlert] = useState<boolean>(false);
   const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
+  const [varAlert, setVarAlert] = useState<boolean>(false);
   const prevScoresRef = useRef<{ home: string; away: string } | null>(null);
 
   const homeScoreStr = homeTeam.score ?? "0";
@@ -76,6 +77,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         const currAway = parseInt(awayScoreStr, 10) || 0;
 
         if (currHome > prevHome) {
+          setVarAlert(false);
           setGoalAlert(true);
           setGoalSide("home");
           const t = setTimeout(() => {
@@ -84,11 +86,21 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
           }, 12000);
           return () => clearTimeout(t);
         } else if (currAway > prevAway) {
+          setVarAlert(false);
           setGoalAlert(true);
           setGoalSide("away");
           const t = setTimeout(() => {
             setGoalAlert(false);
             setGoalSide(null);
+          }, 12000);
+          return () => clearTimeout(t);
+        } else if (currHome < prevHome || currAway < prevAway) {
+          // Placar diminuiu durante o jogo = Gol anulado pelo VAR
+          setGoalAlert(false);
+          setGoalSide(null);
+          setVarAlert(true);
+          const t = setTimeout(() => {
+            setVarAlert(false);
           }, 12000);
           return () => clearTimeout(t);
         }
@@ -189,16 +201,10 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
       className={cn(
         "bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between",
         isDimmed && "opacity-60 hover:opacity-100 hover:border-slate-700/80 filter grayscale-[15%] hover:grayscale-0",
-        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.5)] bg-slate-900 animate-pulse"
+        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.5)] bg-slate-900 animate-pulse",
+        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.5)] bg-slate-900 animate-pulse"
       )}
     >
-      {/* Alerta animado de GOL! */}
-      {goalAlert && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl animate-bounce">
-          <span>⚽</span> GOL!
-        </div>
-      )}
-
       {/* Status Bar Top */}
       <div className="flex justify-between items-center mb-4 gap-2">
         <span 
@@ -263,7 +269,18 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         </div>
 
         {/* Score Area */}
-        <div className="flex flex-col items-center justify-center px-4 flex-1">
+        <div className="flex flex-col items-center justify-center px-4 flex-1 relative">
+          {/* Alerta animado de GOL! ou GOL ANULADO (VAR) - Centralizado sobre o placar */}
+          {goalAlert && (
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-xl animate-bounce whitespace-nowrap">
+              <span className="text-xs">⚽</span> GOL!
+            </div>
+          )}
+          {varAlert && (
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white font-black text-[10px] uppercase tracking-wider shadow-xl animate-bounce whitespace-nowrap">
+              <span>🖥️</span> GOL ANULADO (VAR)
+            </div>
+          )}
           {!isScheduled ? (
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-3">
