@@ -239,9 +239,17 @@ function MatchSummaryContent({
                 Intervalo
               </span>
             ) : showShootoutScores ? (
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-                Pên: {homeShootout} - {awayShootout}
-              </span>
+              <div className="flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20">
+                <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-right">
+                  {homeShootout}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/20 dark:bg-amber-400/20 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">
+                  PK
+                </span>
+                <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-left">
+                  {awayShootout}
+                </span>
+              </div>
             ) : null}
             <span className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center">{statusDisplay}</span>
           </div>

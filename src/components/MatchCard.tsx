@@ -303,9 +303,17 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
                 </span>
               </div>
               {showShootoutScores && (
-                <span className="text-[11px] font-bold text-amber-500 dark:text-amber-400 mt-1">
-                  Pên: {homeShootout} - {awayShootout}
-                </span>
+                <div className="flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/25 dark:border-amber-400/25 mt-1.5">
+                  <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 min-w-3 text-right">
+                    {homeShootout}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 dark:bg-amber-400/20 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">
+                    PK
+                  </span>
+                  <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 min-w-3 text-left">
+                    {awayShootout}
+                  </span>
+                </div>
               )}
             </div>
           ) : (
