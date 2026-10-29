@@ -141,7 +141,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
       const minutesStr = String(Math.max(0, diffMinutes)).padStart(2, "0");
       const secondsStr = String(Math.max(0, diffSeconds)).padStart(2, "0");
       return (
-        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20 whitespace-nowrap shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
           Começa em {minutesStr}:{secondsStr}
         </span>
@@ -150,16 +150,16 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
 
     if (isImminent) {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 animate-pulse">
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 animate-pulse whitespace-nowrap shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          Começa a qualquer momento
+          Aguarde o início
         </span>
       );
     }
 
     if (isLessThan2Hours) {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
           Daqui a pouco - {timeString}
         </span>
@@ -167,7 +167,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
     }
 
     return (
-      <span className="text-xs font-medium text-emerald-400">
+      <span className="text-xs font-medium text-emerald-400 whitespace-nowrap shrink-0">
         {formattedDate}
       </span>
     );
@@ -200,19 +200,19 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
       )}
 
       {/* Status Bar Top */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 gap-2">
         <span 
-          className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate max-w-[200px] flex items-center gap-1.5"
+          className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0 flex items-center gap-1.5"
           title={competitionName}
         >
           {leagueLogo ? (
-            <img src={leagueLogo} alt={competitionName} className="w-4 h-4 object-contain" />
+            <img src={leagueLogo} alt={competitionName} className="w-4 h-4 object-contain shrink-0" />
           ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0"></span>
           )}
-          {competitionName}
+          <span className="truncate">{competitionName}</span>
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isLive && (
             isHalftime ? (
               <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
