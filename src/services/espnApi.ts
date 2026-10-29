@@ -13,6 +13,10 @@ const ALL_LEAGUES_SLUGS = [
   "ita.1"
 ];
 
+// Cache em memória para jogos passados finalizados na Home (evita dezenas de requisições repetidas a cada 30s)
+let pastEventsCache: { timestamp: number; events: any[] } | null = null;
+const PAST_CACHE_TTL = 5 * 60 * 1000; // 5 minutos de cache
+
 export const fetchScoreboard = async (
   leagueSlug: string = "uefa.champions",
   date?: string // Formato: YYYYMMDD
@@ -21,8 +25,10 @@ export const fetchScoreboard = async (
   if (date) params.dates = date;
 
   if (leagueSlug === "all") {
-    // Para a Home, busca os jogos atuais da rodada e também do dia seguinte para cobrir
-    // todas as ligas que dividem rodadas entre sexta/sábado/domingo sem payload excessivo.
+    // Para a Home, busca:
+    // 1. Jogos atuais da rodada (ao vivo e de hoje)
+    // 2. Jogos de amanhã (próximos jogos)
+    // 3. Jogos dos últimos 5 dias (para garantir os 9 últimos jogos finalizados de todas as ligas)
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().slice(0, 10).replace(/-/g, '');
@@ -45,19 +51,67 @@ export const fetchScoreboard = async (
       })).catch(() => null)
     );
 
-    const results = await Promise.all([...currentRoundPromises, ...tomorrowPromises]);
+    // Recupera ou busca os jogos dos últimos 5 dias
+    const now = Date.now();
+    const isPastCacheValid = pastEventsCache && (now - pastEventsCache.timestamp < PAST_CACHE_TTL);
+
+    let pastEvents: any[] = [];
+    if (isPastCacheValid && pastEventsCache) {
+      pastEvents = pastEventsCache.events;
+    } else {
+      const pastDates = [1, 2, 3, 4, 5].map((daysAgo) => {
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
+        return d.toISOString().slice(0, 10).replace(/-/g, '');
+      });
+
+      const pastPromises = ALL_LEAGUES_SLUGS.flatMap((slug) =>
+        pastDates.map((dateStr) =>
+          axios.get(`${ESPN_BASE_URL}/${slug}/scoreboard`, {
+            params: { ...params, dates: dateStr }
+          }).then(res => ({
+            data: res.data,
+            slug
+          })).catch(() => null)
+        )
+      );
+
+      const pastResults = await Promise.all(pastPromises);
+      const pastMap = new Map<string, any>();
+      pastResults.forEach((res) => {
+        if (res && res.data && res.data.events) {
+          res.data.events.forEach((e: any) => {
+            if (!pastMap.has(e.id)) {
+              pastMap.set(e.id, {
+                ...e,
+                _customLeagueSlug: res.slug,
+                _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
+              });
+            }
+          });
+        }
+      });
+      pastEvents = Array.from(pastMap.values());
+      pastEventsCache = { timestamp: now, events: pastEvents };
+    }
+
+    const liveResults = await Promise.all([...currentRoundPromises, ...tomorrowPromises]);
     const eventMap = new Map<string, any>();
 
-    results.forEach((res) => {
+    // Insere os jogos passados no mapa
+    pastEvents.forEach((e) => {
+      eventMap.set(e.id, e);
+    });
+
+    // Insere e sobrescreve com os dados mais recentes da rodada atual e de amanhã
+    liveResults.forEach((res) => {
       if (res && res.data && res.data.events) {
         res.data.events.forEach((e: any) => {
-          if (!eventMap.has(e.id)) {
-            eventMap.set(e.id, {
-              ...e,
-              _customLeagueSlug: res.slug,
-              _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
-            });
-          }
+          eventMap.set(e.id, {
+            ...e,
+            _customLeagueSlug: res.slug,
+            _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
+          });
         });
       }
     });
