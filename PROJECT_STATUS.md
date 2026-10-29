@@ -14,6 +14,8 @@
    - Realizar as alterações, validar com `npm run build` e enviar ao GitHub (`git push origin main`) com segurança e autonomia.
 3. **Qualidade e Estabilidade:**
    - Sempre executar `npm run build` antes de commitar para garantir zero erros de TypeScript, Turbopack e Next.js.
+4. **Atualização Contínua deste Documento:**
+   - **Obrigatório:** A cada nova alteração, correção ou funcionalidade adicionada ao projeto, o arquivo `PROJECT_STATUS.md` **deve ser atualizado** com as novas instruções e detalhes técnicos, e commitado junto no GitHub para garantir continuidade perfeita entre diferentes computadores.
 
 ---
 
@@ -153,3 +155,4 @@ Quando você abrir o projeto no outro computador (em casa):
    > *"Leia o arquivo `PROJECT_STATUS.md` para lembrar de todo o contexto do projeto e continue de onde paramos."*
 
 O agente lerá este arquivo e terá 100% das informações, decisões, regras e códigos prontos para prosseguir imediatamente!
+
