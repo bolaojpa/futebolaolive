@@ -100,7 +100,7 @@ function MatchSummaryContent({ data }: { data: any }) {
   // Identificação de Intervalo no modal
   const isHalftime = 
     header.status.type.name === "STATUS_HALFTIME" ||
-    header.status.type.id === "2" ||
+    header.status.type.id === "23" ||
     header.status.type.shortDetail === "INT" ||
     header.status.type.shortDetail === "HT" ||
     header.status.type.detail?.toLowerCase().includes("intervalo") ||

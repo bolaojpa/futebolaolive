@@ -25,7 +25,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
   // Identificação de Intervalo no jogo ao vivo
   const isHalftime = 
     status.type.name === "STATUS_HALFTIME" ||
-    status.type.id === "2" ||
+    status.type.id === "23" ||
     status.type.shortDetail === "INT" ||
     status.type.shortDetail === "HT" ||
     status.type.detail?.toLowerCase().includes("intervalo") ||
