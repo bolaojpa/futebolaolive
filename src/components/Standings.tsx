@@ -29,15 +29,15 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {data.children.map((group: any) => (
-        <div key={group.uid} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div key={group.uid} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs dark:shadow-none transition-colors">
           {group.name && group.name !== "Campeonato Brasileiro" && (
-            <div className="bg-slate-800 px-4 py-2 font-bold text-sm text-slate-300">
+            <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
               {group.name}
             </div>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-400 bg-slate-900/50 uppercase">
+              <thead className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 uppercase border-b border-slate-200 dark:border-slate-800/80">
                 <tr>
                   <th className="px-4 py-3 w-8">#</th>
                   <th className="px-4 py-3 min-w-[150px]">Clube</th>
@@ -49,14 +49,14 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                   <th className="px-2 py-3 text-center" title="Saldo de Gols">SG</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/50">
                 {group.standings?.entries?.map((entry: any) => {
                   const stats = entry.stats;
                   const getStat = (name: string) => stats.find((s: any) => s.name === name)?.displayValue || "0";
                   
                   return (
-                    <tr key={entry.team.id} className="hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-400">
+                    <tr key={entry.team.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">
                         {getStat("rank")}
                       </td>
                       <td className="px-4 py-3 flex items-center gap-3">
@@ -65,18 +65,18 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                           alt={entry.team.name} 
                           className="w-6 h-6 object-contain"
                         />
-                        <span className="font-semibold text-slate-200">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {entry.team.shortDisplayName}
                         </span>
                       </td>
-                      <td className="px-2 py-3 text-center font-bold text-emerald-500">
+                      <td className="px-2 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
                         {getStat("points")}
                       </td>
-                      <td className="px-2 py-3 text-center text-slate-300">{getStat("gamesPlayed")}</td>
-                      <td className="px-2 py-3 text-center text-slate-300">{getStat("wins")}</td>
-                      <td className="px-2 py-3 text-center text-slate-300">{getStat("ties")}</td>
-                      <td className="px-2 py-3 text-center text-slate-300">{getStat("losses")}</td>
-                      <td className="px-2 py-3 text-center text-slate-300 font-medium">
+                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("gamesPlayed")}</td>
+                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("wins")}</td>
+                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("ties")}</td>
+                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("losses")}</td>
+                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300 font-medium">
                         {getStat("pointDifferential")}
                       </td>
                     </tr>

@@ -25,17 +25,17 @@ export function LeagueSelector({ activeLeague, onSelect }: LeagueSelectorProps) 
   const activeLeagueName = LEAGUES.find(l => l.slug === activeLeague)?.name;
 
   return (
-    <div className="w-full border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div className="w-full border-b border-slate-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
       <div className="container mx-auto px-4">
         
         {/* Mobile Header (Hamburger) */}
         <div className="lg:hidden flex items-center justify-between py-3">
-          <span className="text-emerald-400 font-bold flex items-center gap-2">
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2">
             {activeLeagueName}
           </span>
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -44,7 +44,7 @@ export function LeagueSelector({ activeLeague, onSelect }: LeagueSelectorProps) 
         {/* Dropdown Menu (Mobile) / Horizontal Tabs (Desktop) */}
         <div className={cn(
           "lg:flex lg:gap-2 lg:py-4 lg:items-center overflow-x-auto scrollbar-none",
-          isOpen ? "flex flex-col py-4 gap-2 border-t border-slate-800/50" : "hidden"
+          isOpen ? "flex flex-col py-4 gap-2 border-t border-slate-200 dark:border-slate-800/50" : "hidden"
         )}>
           {LEAGUES.map((league) => (
             <button
@@ -56,8 +56,8 @@ export function LeagueSelector({ activeLeague, onSelect }: LeagueSelectorProps) 
               className={cn(
                 "px-4 py-2 rounded-xl lg:rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 text-left lg:text-center",
                 activeLeague === league.slug
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/50"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/30"
+                  : "bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-transparent"
               )}
             >
               {league.name}

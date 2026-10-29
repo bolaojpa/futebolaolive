@@ -153,8 +153,8 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
       const minutesStr = String(Math.max(0, diffMinutes)).padStart(2, "0");
       const secondsStr = String(Math.max(0, diffSeconds)).padStart(2, "0");
       return (
-        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20 whitespace-nowrap shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 dark:border-amber-400/20 whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-ping" />
           Começa em {minutesStr}:{secondsStr}
         </span>
       );
@@ -162,8 +162,8 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
 
     if (isImminent) {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-400/30 animate-pulse whitespace-nowrap shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30 dark:border-amber-400/30 animate-pulse whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
           Aguarde o início
         </span>
       );
@@ -171,15 +171,15 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
 
     if (isLessThan2Hours) {
       return (
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
           Daqui a pouco - {timeString}
         </span>
       );
     }
 
     return (
-      <span className="text-xs font-medium text-emerald-400 whitespace-nowrap shrink-0">
+      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">
         {formattedDate}
       </span>
     );
@@ -199,30 +199,30 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
     <div 
       onClick={() => onClick(event.id)}
       className={cn(
-        "bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between",
-        isDimmed && "opacity-60 hover:opacity-100 hover:border-slate-700/80 filter grayscale-[15%] hover:grayscale-0",
-        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.5)] bg-slate-900 animate-pulse",
-        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.5)] bg-slate-900 animate-pulse"
+        "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between shadow-xs dark:shadow-none",
+        isDimmed && "opacity-60 hover:opacity-100 hover:border-slate-300 dark:hover:border-slate-700/80 filter grayscale-[15%] hover:grayscale-0",
+        goalAlert && "ring-2 ring-emerald-500 dark:ring-emerald-400 border-emerald-500 dark:border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.35)] bg-white dark:bg-slate-900 animate-pulse",
+        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.35)] bg-white dark:bg-slate-900 animate-pulse"
       )}
     >
       {/* Status Bar Top */}
       <div className="flex justify-between items-center mb-4 gap-2">
         <span 
-          className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0 flex items-center gap-1.5"
+          className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate min-w-0 flex items-center gap-1.5"
           title={competitionName}
         >
           {leagueLogo ? (
             <img src={leagueLogo} alt={competitionName} className="w-4 h-4 object-contain shrink-0" />
           ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0"></span>
           )}
           <span className="truncate">{competitionName}</span>
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {isLive && (
             isHalftime ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 dark:border-amber-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                 Intervalo
               </span>
             ) : (
@@ -230,7 +230,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
                 "flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full transition-colors",
                 goalAlert 
                   ? "bg-emerald-500 text-slate-950 font-black" 
-                  : "text-rose-500 bg-rose-500/10"
+                  : "text-rose-600 dark:text-rose-500 bg-rose-500/10"
               )}>
                 <span className={cn(
                   "w-1.5 h-1.5 rounded-full animate-pulse",
@@ -241,7 +241,7 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
             )
           )}
           {isFinished && (
-            <span className="text-xs font-medium text-slate-500">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               {formattedDate} | Fim
             </span>
           )}
@@ -257,12 +257,12 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
             {homeTeam.team.logo ? (
               <img src={homeTeam.team.logo} alt={homeTeam.team.name} className="w-10 h-10 object-contain" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-slate-800" />
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />
             )}
           </div>
           <span className={cn(
             "text-sm font-semibold text-center line-clamp-1 transition-colors",
-            goalSide === "home" ? "text-emerald-400 font-bold" : "text-slate-200"
+            goalSide === "home" ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-slate-800 dark:text-slate-200"
           )}>
             {homeTeam.team.shortDisplayName}
           </span>
@@ -287,29 +287,29 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
                 <span className={cn(
                   "text-3xl font-bold transition-all duration-300",
                   goalSide === "home" 
-                    ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
-                    : "text-white"
+                    ? "text-emerald-600 dark:text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                    : "text-slate-900 dark:text-white"
                 )}>
                   {homeTeam.score}
                 </span>
-                <span className="text-slate-600 font-bold">-</span>
+                <span className="text-slate-300 dark:text-slate-600 font-bold">-</span>
                 <span className={cn(
                   "text-3xl font-bold transition-all duration-300",
                   goalSide === "away" 
-                    ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
-                    : "text-white"
+                    ? "text-emerald-600 dark:text-emerald-400 scale-125 font-black drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+                    : "text-slate-900 dark:text-white"
                 )}>
                   {awayTeam.score}
                 </span>
               </div>
               {showShootoutScores && (
-                <span className="text-[11px] font-bold text-amber-400 mt-1">
+                <span className="text-[11px] font-bold text-amber-500 dark:text-amber-400 mt-1">
                   Pên: {homeShootout} - {awayShootout}
                 </span>
               )}
             </div>
           ) : (
-            <span className="text-xl font-bold text-slate-600">VS</span>
+            <span className="text-xl font-bold text-slate-300 dark:text-slate-600">VS</span>
           )}
         </div>
 
@@ -319,12 +319,12 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
             {awayTeam.team.logo ? (
               <img src={awayTeam.team.logo} alt={awayTeam.team.name} className="w-10 h-10 object-contain" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-slate-800" />
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />
             )}
           </div>
           <span className={cn(
             "text-sm font-semibold text-center line-clamp-1 transition-colors",
-            goalSide === "away" ? "text-emerald-400 font-bold" : "text-slate-200"
+            goalSide === "away" ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-slate-800 dark:text-slate-200"
           )}>
             {awayTeam.team.shortDisplayName}
           </span>

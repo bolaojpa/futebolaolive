@@ -109,19 +109,19 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-            className="fixed bottom-0 left-0 right-0 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:w-[600px] md:rounded-2xl md:h-[80vh] h-[85vh] bg-slate-900 border-t md:border border-slate-800 z-50 flex flex-col shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:w-[600px] md:rounded-2xl md:h-[80vh] h-[85vh] bg-white dark:bg-slate-900 border-t md:border border-slate-200 dark:border-slate-800 z-50 flex flex-col shadow-2xl text-slate-900 dark:text-slate-100 transition-colors"
           >
-            <div className="flex justify-between items-center p-4 border-b border-slate-800 shrink-0">
-              <h2 className="text-lg font-bold text-slate-100">Detalhes da Partida</h2>
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Detalhes da Partida</h2>
               <button 
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-700">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
                   <RefreshCw className="w-8 h-8 animate-spin mb-4" />
@@ -215,9 +215,9 @@ function MatchSummaryContent({
     <div className="space-y-5">
       {/* Placar Gigante com Resumo de Eventos */}
       <div className={cn(
-        "bg-slate-950 p-4 md:p-5 rounded-xl border border-slate-800 shadow-sm transition-all duration-300 relative",
-        goalAlert && "ring-2 ring-emerald-400 border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.35)]",
-        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.35)]"
+        "bg-slate-50 dark:bg-slate-950 p-4 md:p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300 relative",
+        goalAlert && "ring-2 ring-emerald-500 dark:ring-emerald-400 border-emerald-500 dark:border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.25)]",
+        varAlert && "ring-2 ring-rose-500 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.25)]"
       )}>
         {/* Alerta animado de GOL! ou VAR no Modal */}
         {goalAlert && (
@@ -234,16 +234,16 @@ function MatchSummaryContent({
           <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" isGoal={goalSide === "home"} />
           <div className="flex flex-col items-center px-4 gap-1.5">
             {isHalftime ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-3 py-1 rounded-full border border-amber-500/20 dark:border-amber-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                 Intervalo
               </span>
             ) : showShootoutScores ? (
-              <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
                 Pên: {homeShootout} - {awayShootout}
               </span>
             ) : null}
-            <span className="text-sm font-medium text-slate-400 text-center">{statusDisplay}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center">{statusDisplay}</span>
           </div>
           <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" isGoal={goalSide === "away"} />
         </div>
@@ -253,7 +253,7 @@ function MatchSummaryContent({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-4 border-b border-slate-800 pb-0">
+      <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-0">
         {[
           { id: "resumo", label: "Resumo" },
           { id: "estatisticas", label: "Estatísticas" },
@@ -263,10 +263,10 @@ function MatchSummaryContent({
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={cn(
-              "font-medium pb-2 border-b-2 transition-colors",
+              "font-semibold text-sm pb-2 border-b-2 transition-colors",
               activeTab === tab.id 
-                ? "text-emerald-400 border-emerald-400" 
-                : "text-slate-500 border-transparent hover:text-slate-300"
+                ? "text-emerald-600 dark:text-emerald-400 border-emerald-500 dark:border-emerald-400" 
+                : "text-slate-500 border-transparent hover:text-slate-800 dark:hover:text-slate-300"
             )}
           >
             {tab.label}
@@ -423,11 +423,11 @@ function TeamEventsSummary({
   if (homeEvents.length === 0 && awayEvents.length === 0) return null;
 
   return (
-    <div className="mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs">
+    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/80 grid grid-cols-2 gap-3 text-xs">
       {/* Mandante (Alinhado à esquerda, em ordem cronológica) */}
-      <div className="space-y-1 max-h-24 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+      <div className="space-y-1 max-h-24 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800">
         {homeEvents.map((item) => (
-          <div key={item.id} className="flex items-center gap-1.5 text-slate-200">
+          <div key={item.id} className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
             {item.type === "goal" && <span className="text-xs shrink-0">⚽</span>}
             {item.type === "missed-penalty" && <span className="text-xs shrink-0" title="Pênalti Perdido">🚫⚽</span>}
             {item.type === "red-card" && <span className="w-2 h-2.5 bg-rose-500 rounded-[1.5px] inline-block shadow-sm shrink-0" />}
@@ -436,12 +436,12 @@ function TeamEventsSummary({
               className={cn(
                 "truncate max-w-[125px] sm:max-w-[180px]",
                 item.type === "goal" 
-                  ? "font-semibold text-white" 
+                  ? "font-semibold text-slate-900 dark:text-white" 
                   : item.type === "missed-penalty"
-                  ? "font-medium text-amber-300"
+                  ? "font-medium text-amber-600 dark:text-amber-300"
                   : item.type === "red-card" 
-                  ? "font-semibold text-rose-200" 
-                  : "font-medium text-slate-300"
+                  ? "font-semibold text-rose-600 dark:text-rose-200" 
+                  : "font-medium text-slate-700 dark:text-slate-300"
               )} 
               title={item.player}
             >
@@ -450,7 +450,7 @@ function TeamEventsSummary({
             <span 
               className={cn(
                 "text-[10px] font-mono shrink-0",
-                item.type === "red-card" ? "text-rose-400/80" : "text-slate-400"
+                item.type === "red-card" ? "text-rose-500/80 dark:text-rose-400/80" : "text-slate-400"
               )}
             >
               {item.minute}
@@ -460,13 +460,13 @@ function TeamEventsSummary({
       </div>
 
       {/* Visitante (Alinhado à direita, em ordem cronológica) */}
-      <div className="space-y-1 max-h-24 overflow-y-auto pl-1 scrollbar-thin scrollbar-thumb-slate-800">
+      <div className="space-y-1 max-h-24 overflow-y-auto pl-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800">
         {awayEvents.map((item) => (
-          <div key={item.id} className="flex items-center justify-end gap-1.5 text-slate-200">
+          <div key={item.id} className="flex items-center justify-end gap-1.5 text-slate-700 dark:text-slate-200">
             <span 
               className={cn(
                 "text-[10px] font-mono shrink-0",
-                item.type === "red-card" ? "text-rose-400/80" : "text-slate-400"
+                item.type === "red-card" ? "text-rose-500/80 dark:text-rose-400/80" : "text-slate-400"
               )}
             >
               {item.minute}
@@ -475,12 +475,12 @@ function TeamEventsSummary({
               className={cn(
                 "truncate max-w-[125px] sm:max-w-[180px]",
                 item.type === "goal" 
-                  ? "font-semibold text-white" 
+                  ? "font-semibold text-slate-900 dark:text-white" 
                   : item.type === "missed-penalty"
-                  ? "font-medium text-amber-300"
+                  ? "font-medium text-amber-600 dark:text-amber-300"
                   : item.type === "red-card" 
-                  ? "font-semibold text-rose-200" 
-                  : "font-medium text-slate-300"
+                  ? "font-semibold text-rose-600 dark:text-rose-200" 
+                  : "font-medium text-slate-700 dark:text-slate-300"
               )} 
               title={item.player}
             >
@@ -507,7 +507,7 @@ function TeamDisplay({
   team: any; 
   score: string; 
   isPreMatch?: boolean; 
-  align: "left" | "right";
+  align: "left" | "right"; 
   isGoal?: boolean;
 }) {
   return (
@@ -516,13 +516,13 @@ function TeamDisplay({
         {team?.logos?.[0]?.href ? (
            <img src={team?.logos?.[0]?.href} alt={team?.name} className="w-16 h-16 object-contain" />
         ) : (
-           <div className="w-16 h-16 rounded-full bg-slate-800" />
+           <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800" />
         )}
       </div>
       <div className="text-center">
         <span className={cn(
           "block text-sm font-bold transition-colors line-clamp-1",
-          isGoal ? "text-emerald-400 font-black" : "text-slate-100"
+          isGoal ? "text-emerald-600 dark:text-emerald-400 font-black" : "text-slate-800 dark:text-slate-100"
         )}>
           {team?.shortDisplayName || team?.name}
         </span>
@@ -530,8 +530,8 @@ function TeamDisplay({
       <span className={cn(
         "text-4xl font-black transition-all duration-300",
         isGoal 
-          ? "text-emerald-400 scale-125 drop-shadow-[0_0_15px_rgba(16,185,129,0.9)]" 
-          : "text-white"
+          ? "text-emerald-600 dark:text-emerald-400 scale-125 drop-shadow-[0_0_15px_rgba(16,185,129,0.9)]" 
+          : "text-slate-900 dark:text-white"
       )}>
         {isPreMatch ? "-" : (score || "0")}
       </span>
@@ -722,14 +722,14 @@ function TimelineTab({
     <div className="space-y-4">
       {/* Sub-toggle: Principais Lances vs Lance a Lance */}
       {hasCommentary && hasKeyEvents && (
-        <div className="flex items-center gap-2 pb-1 border-b border-slate-800/60">
+        <div className="flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-slate-800/60">
           <button
             onClick={() => setTimelineMode("key")}
             className={cn(
               "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
               activeMode === "key"
                 ? "bg-emerald-500 text-slate-950 shadow-sm"
-                : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
+                : "bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             )}
           >
             <span>⚡</span> Principais Lances
@@ -740,7 +740,7 @@ function TimelineTab({
               "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
               activeMode === "all"
                 ? "bg-emerald-500 text-slate-950 shadow-sm"
-                : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
+                : "bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             )}
           >
             <span>📝</span> Lance a Lance ({commentary.length})
@@ -758,13 +758,13 @@ function TimelineTab({
               return (
                 <div 
                   key={event.id || `period-${idx}`}
-                  className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-slate-800/40 border border-slate-700/50 text-slate-300 font-semibold text-xs tracking-wide"
+                  className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 font-semibold text-xs tracking-wide"
                 >
                   <span className="flex items-center gap-2">
                     <span>{details.icon}</span>
                     <span>{details.mainText}</span>
                   </span>
-                  <span className="text-slate-400 font-mono text-[11px]">{details.clockLabel}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{details.clockLabel}</span>
                 </div>
               );
             }
@@ -775,17 +775,17 @@ function TimelineTab({
                 className={cn(
                   "flex items-start gap-3 p-3 rounded-lg transition-colors",
                   details.isShootout 
-                    ? "bg-slate-800/80 border border-amber-500/30 shadow-sm" 
+                    ? "bg-amber-50 dark:bg-slate-800/80 border border-amber-400/40 dark:border-amber-500/30 shadow-sm" 
                     : details.isGoal
-                    ? "bg-slate-800/80 border border-emerald-500/30 shadow-sm"
+                    ? "bg-emerald-50 dark:bg-slate-800/80 border border-emerald-400/40 dark:border-emerald-500/30 shadow-sm"
                     : details.isVar
-                    ? "bg-amber-950/20 border border-amber-500/30 shadow-sm"
-                    : "bg-slate-800/50"
+                    ? "bg-amber-50/70 dark:bg-amber-950/20 border border-amber-400/40 dark:border-amber-500/30 shadow-sm"
+                    : "bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-transparent"
                 )}
               >
                 <div className={cn(
                   "w-14 text-right font-bold shrink-0 text-xs mt-0.5",
-                  details.isShootout ? "text-amber-400" : details.isGoal ? "text-emerald-400 font-black" : "text-slate-400 font-mono"
+                  details.isShootout ? "text-amber-600 dark:text-amber-400" : details.isGoal ? "text-emerald-600 dark:text-emerald-400 font-black" : "text-slate-500 dark:text-slate-400 font-mono"
                 )}>
                   {details.clockLabel}
                 </div>
@@ -794,7 +794,7 @@ function TimelineTab({
                     <span className="shrink-0">{details.icon}</span>
                     <p className={cn(
                       "text-sm font-medium leading-snug",
-                      details.isGoal ? "text-white font-semibold" : "text-slate-200"
+                      details.isGoal ? "text-slate-900 dark:text-white font-semibold" : "text-slate-800 dark:text-slate-200"
                     )}>
                       {details.mainText}
                     </p>
@@ -808,7 +808,7 @@ function TimelineTab({
 
       {/* Visão de Lance a Lance Completo */}
       {activeMode === "all" && hasCommentary && (
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800">
           {commentary.map((c: any, idx: number) => {
             const icon = getCommentaryIcon(c.text);
             const isGoal = icon === "⚽";
@@ -821,17 +821,17 @@ function TimelineTab({
                 className={cn(
                   "flex items-start gap-3 p-2.5 rounded-lg border transition-colors",
                   isGoal 
-                    ? "bg-emerald-950/30 border-emerald-500/40" 
+                    ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/40" 
                     : isVar
-                    ? "bg-amber-950/20 border-amber-500/40"
+                    ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-300 dark:border-amber-500/40"
                     : isCard
-                    ? "bg-slate-800/70 border-slate-700/60"
-                    : "bg-slate-800/30 border-slate-800/60"
+                    ? "bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700/60"
+                    : "bg-slate-50/50 dark:bg-slate-800/30 border-slate-200/80 dark:border-slate-800/60"
                 )}
               >
                 <div className={cn(
                   "w-12 text-right font-mono text-xs font-bold shrink-0 mt-0.5",
-                  isGoal ? "text-emerald-400 font-black" : "text-slate-400"
+                  isGoal ? "text-emerald-600 dark:text-emerald-400 font-black" : "text-slate-500 dark:text-slate-400"
                 )}>
                   {c.time?.displayValue || "--"}
                 </div>
@@ -839,7 +839,7 @@ function TimelineTab({
                   <span className="shrink-0 text-sm">{icon}</span>
                   <p className={cn(
                     "text-xs leading-relaxed",
-                    isGoal ? "text-white font-semibold" : "text-slate-200"
+                    isGoal ? "text-slate-900 dark:text-white font-semibold" : "text-slate-800 dark:text-slate-200"
                   )}>
                     {c.text}
                   </p>
@@ -927,12 +927,12 @@ function StatsTab({ boxscore, homeId, awayId, matchState }: { boxscore: any, hom
 
         return (
           <div key={hStat.name} className="space-y-1">
-            <div className="flex justify-between text-xs font-semibold text-slate-300">
+            <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
               <span>{hStat.displayValue}</span>
               <span className="text-slate-500 uppercase text-center">{labelPt}</span>
               <span>{aStat.displayValue}</span>
             </div>
-            <div className="flex h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div className="flex h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
               <div className="bg-emerald-500 transition-all duration-500" style={{ width: `${hPct}%` }} />
               <div className="bg-rose-500 transition-all duration-500" style={{ width: `${100 - hPct}%` }} />
             </div>
@@ -971,11 +971,11 @@ function RostersTab({ rosters, homeId, awayId, matchState }: { rosters: any[], h
       const redCards = getStat("redCards");
       
       return (
-        <div key={player.athlete.id} className="flex gap-3 text-sm items-center py-1 border-b border-slate-800/30 last:border-0">
-          <span className="text-slate-500 w-5 font-mono font-bold text-right shrink-0">
+        <div key={player.athlete.id} className="flex gap-3 text-sm items-center py-1 border-b border-slate-200 dark:border-slate-800/30 last:border-0">
+          <span className="text-slate-400 dark:text-slate-500 w-5 font-mono font-bold text-right shrink-0">
             {player.jersey || '-'}
           </span>
-          <span className="text-slate-200 truncate flex-1">
+          <span className="text-slate-800 dark:text-slate-200 truncate flex-1">
             {player.athlete.shortName}
           </span>
           {/* Eventos do Jogador */}
@@ -983,7 +983,7 @@ function RostersTab({ rosters, homeId, awayId, matchState }: { rosters: any[], h
             {goals > 0 && <span className="text-xs" title="Gol">⚽</span>}
             {yellowCards > 0 && <span className="text-xs" title="Cartão Amarelo">🟨</span>}
             {redCards > 0 && <span className="text-xs" title="Cartão Vermelho">🟥</span>}
-            {player.subbedIn && <span className="text-emerald-400 text-xs font-bold" title="Entrou">▲</span>}
+            {player.subbedIn && <span className="text-emerald-500 text-xs font-bold" title="Entrou">▲</span>}
             {player.subbedOut && <span className="text-rose-500 text-xs font-bold" title="Saiu">▼</span>}
           </div>
         </div>
@@ -992,18 +992,18 @@ function RostersTab({ rosters, homeId, awayId, matchState }: { rosters: any[], h
 
     return (
       <div className="flex-1 space-y-4">
-        <h4 className="font-bold text-slate-300 mb-2 truncate text-center bg-slate-800 py-1 rounded">
+        <h4 className="font-bold text-slate-800 dark:text-slate-300 mb-2 truncate text-center bg-slate-100 dark:bg-slate-800 py-1 rounded">
           {roster.team.displayName}
         </h4>
         
         <div className="space-y-1">
-          <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Titulares</h5>
+          <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Titulares</h5>
           {starters.map(renderPlayer)}
         </div>
         
         {bench.length > 0 && (
           <div className="space-y-1 mt-4">
-            <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Reservas</h5>
+            <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Reservas</h5>
             {bench.map(renderPlayer)}
           </div>
         )}
@@ -1012,7 +1012,7 @@ function RostersTab({ rosters, homeId, awayId, matchState }: { rosters: any[], h
   };
 
   return (
-    <div className="flex gap-4 md:gap-6 divide-x divide-slate-800">
+    <div className="flex gap-4 md:gap-6 divide-x divide-slate-200 dark:divide-slate-800">
       {renderRoster(homeRoster)}
       <div className="pl-4 md:pl-6 flex-1">
         {renderRoster(awayRoster)}

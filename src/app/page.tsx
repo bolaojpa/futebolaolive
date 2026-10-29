@@ -89,10 +89,10 @@ export default function Home() {
     .slice(0, finishedLimit);
 
   return (
-    <main className="flex-1 flex flex-col bg-[#020617] min-h-screen">
+    <main className="flex-1 flex flex-col bg-slate-100 dark:bg-[#020617] text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
       <Header />
       
-      <div className="sticky top-16 z-40 bg-slate-950/95 backdrop-blur-md">
+      <div className="sticky top-16 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md transition-colors duration-200">
         <LeagueSelector activeLeague={activeLeague} onSelect={(slug) => {
           setActiveLeague(slug);
           setLeagueFilterMode("upcoming"); // reseta o filtro ao mudar de liga
@@ -102,7 +102,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 space-y-10">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <RefreshCw className="w-8 h-8 animate-spin mb-4" />
+            <RefreshCw className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
             <p>Carregando partidas...</p>
           </div>
         ) : error ? (
@@ -121,7 +121,7 @@ export default function Home() {
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Ao Vivo</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-wider">Ao Vivo</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {liveEvents.map((event) => (
@@ -144,7 +144,7 @@ export default function Home() {
                   <section>
                     <div className="flex items-center gap-2 mb-4">
                       <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                      <h3 className="text-lg font-bold text-slate-200 uppercase tracking-wider">Próximos Jogos</h3>
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Próximos Jogos</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {upcomingEvents.map((event) => (
@@ -163,8 +163,8 @@ export default function Home() {
                 {finishedEvents.length > 0 && (
                   <section>
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="w-3 h-3 rounded-full bg-slate-600" />
-                      <h3 className="text-lg font-bold text-slate-400 uppercase tracking-wider">Últimos Jogos</h3>
+                      <span className="w-3 h-3 rounded-full bg-slate-500 dark:bg-slate-600" />
+                      <h3 className="text-lg font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider">Últimos Jogos</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {finishedEvents.map((event) => (
@@ -189,7 +189,7 @@ export default function Home() {
                   <select
                     value={leagueFilterMode}
                     onChange={(e) => setLeagueFilterMode(e.target.value as any)}
-                    className="w-full appearance-none bg-slate-900 border border-slate-800 text-slate-200 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 py-3 px-4 rounded-xl font-bold uppercase tracking-wider text-sm focus:outline-none focus:border-emerald-500"
                   >
                     <option value="upcoming">Próximos Jogos</option>
                     <option value="finished">Finalizados</option>
@@ -202,33 +202,33 @@ export default function Home() {
                 </div>
 
                 {/* Desktop Filter Tabs */}
-                <div className="hidden md:flex flex-wrap items-center gap-y-4 gap-x-6 mb-6 border-b border-slate-800 pb-2">
+                <div className="hidden md:flex flex-wrap items-center gap-y-4 gap-x-6 mb-6 border-b border-slate-200 dark:border-slate-800 pb-2">
                   <button 
                     onClick={() => setLeagueFilterMode("upcoming")}
-                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "upcoming" ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "upcoming" ? "border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "upcoming" ? "bg-emerald-500" : "bg-slate-600"}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "upcoming" ? "bg-emerald-500" : "bg-slate-400 dark:bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Próximos Jogos</h3>
                   </button>
                   <button 
                     onClick={() => setLeagueFilterMode("finished")}
-                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "finished" ? "border-slate-300 text-slate-200" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "finished" ? "border-slate-700 text-slate-800 dark:border-slate-300 dark:text-slate-200" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "finished" ? "bg-slate-300" : "bg-slate-600"}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "finished" ? "bg-slate-700 dark:bg-slate-300" : "bg-slate-400 dark:bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Finalizados</h3>
                   </button>
                   <button 
                     onClick={() => setLeagueFilterMode("standings")}
-                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "standings" ? "border-amber-500 text-amber-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "standings" ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "standings" ? "bg-amber-500" : "bg-slate-600"}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "standings" ? "bg-amber-500" : "bg-slate-400 dark:bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Classificação</h3>
                   </button>
                   <button 
                     onClick={() => setLeagueFilterMode("knockout")}
-                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "knockout" ? "border-purple-500 text-purple-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}
+                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "knockout" ? "border-purple-500 text-purple-600 dark:text-purple-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "knockout" ? "bg-purple-500" : "bg-slate-600"}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "knockout" ? "bg-purple-500" : "bg-slate-400 dark:bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Mata-Mata</h3>
                   </button>
                 </div>
