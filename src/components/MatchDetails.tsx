@@ -165,7 +165,63 @@ function MatchSummaryContent({
 
   const home = header.competitors.find((c: any) => c.homeAway === "home");
   const away = header.competitors.find((c: any) => c.homeAway === "away");
-  const matchState = header.status.type.state; // "pre", "in", "post"
+  const matchState = header.status?.type?.state; // "pre", "in", "post"
+  const isLive = matchState === "in";
+  const isFinished = matchState === "post";
+  const isScheduled = matchState === "pre";
+
+  // Prevenção de hidratação e relógio ao vivo para contagem regressiva
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    setMounted(true);
+    if (!isScheduled) return;
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isScheduled]);
+
+  // Formatar data: "Hoje/Amanhã/Ontem/DD/MM - HH:MM"
+  const rawDate = header.date || data?.header?.competitions?.[0]?.date;
+  const eventDate = rawDate ? new Date(rawDate) : new Date();
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getDate() === d2.getDate() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getFullYear() === d2.getFullYear();
+
+  let datePrefix = "";
+  if (isSameDay(eventDate, today)) {
+    datePrefix = "Hoje";
+  } else if (isSameDay(eventDate, tomorrow)) {
+    datePrefix = "Amanhã";
+  } else if (isSameDay(eventDate, yesterday)) {
+    datePrefix = "Ontem";
+  } else {
+    datePrefix = eventDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  }
+
+  const timeString = eventDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const formattedDate = `${datePrefix} - ${timeString}`;
+
+  // Cálculo da contagem regressiva para jogos prestes a começar
+  const diffMs = eventDate.getTime() - now.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  // Menos de 1 hora para começar (contagem regressiva: "Começa em MM:SS")
+  const isLessThan1Hour = mounted && isScheduled && diffMs > 0 && diffMs < 60 * 60 * 1000;
+  // Menos de 2 horas (e pelo menos 1 hora) para começar ("Daqui a pouco - HH:MM")
+  const isLessThan2Hours = mounted && isScheduled && diffMs >= 60 * 60 * 1000 && diffMs < 120 * 60 * 1000;
+  // Passou do horário agendado mas ainda não iniciou oficialmente
+  const isImminent = mounted && isScheduled && diffMs <= 0 && diffMs > -30 * 60 * 1000;
   
   // Identificação de Intervalo no modal
   const isHalftime = 
@@ -191,22 +247,93 @@ function MatchSummaryContent({
   const awayShootout = away?.shootoutScore;
   const showShootoutScores = hasShootout && homeShootout !== undefined && awayShootout !== undefined;
 
-  // Formatação de statusDisplay
-  let statusDisplay = header.status.type.detail;
-  if (isHalftime) {
-    statusDisplay = "Intervalo";
-  } else if (matchState === "post" && (hasShootout || statusDisplay?.toLowerCase().includes("pen"))) {
-    statusDisplay = "Fim de jogo";
-  } else if (matchState === "pre" && header.date) {
-    statusDisplay = new Date(header.date).toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    }).replace(", ", " às ");
-  }
+  const renderScheduledStatus = () => {
+    if (isLessThan1Hour) {
+      const minutesStr = String(Math.max(0, diffMinutes)).padStart(2, "0");
+      const secondsStr = String(Math.max(0, diffSeconds)).padStart(2, "0");
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-500/20 dark:border-amber-400/20 whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-ping" />
+          Começa em {minutesStr}:{secondsStr}
+        </span>
+      );
+    }
+
+    if (isImminent) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 dark:border-amber-400/30 animate-pulse whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+          Aguarde o início
+        </span>
+      );
+    }
+
+    if (isLessThan2Hours) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
+          Daqui a pouco - {timeString}
+        </span>
+      );
+    }
+
+    return (
+      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">
+        {formattedDate}
+      </span>
+    );
+  };
+
+  const renderLiveStatus = () => {
+    if (isHalftime) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-3 py-1 rounded-full border border-amber-500/20 dark:border-amber-400/20 whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
+          Intervalo
+        </span>
+      );
+    }
+
+    return (
+      <span className={cn(
+        "flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full transition-colors whitespace-nowrap shrink-0",
+        goalAlert 
+          ? "bg-emerald-500 text-slate-950 font-black" 
+          : "text-rose-600 dark:text-rose-500 bg-rose-500/10"
+      )}>
+        <span className={cn(
+          "w-1.5 h-1.5 rounded-full animate-pulse",
+          goalAlert ? "bg-slate-950" : "bg-rose-500"
+        )} />
+        {header.status?.displayClock && header.status.displayClock !== "0'" 
+          ? header.status.displayClock 
+          : (header.status?.type?.shortDetail || "Ao Vivo")}
+      </span>
+    );
+  };
+
+  const renderFinishedStatus = () => {
+    return (
+      <div className="flex flex-col items-center gap-1.5">
+        {showShootoutScores && (
+          <div className="flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20">
+            <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-right">
+              {homeShootout}
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 dark:bg-amber-400/20 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">
+              PK
+            </span>
+            <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-left">
+              {awayShootout}
+            </span>
+          </div>
+        )}
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          {formattedDate} | Fim
+        </span>
+      </div>
+    );
+  };
 
   const homeEvents = parseTeamIncidents(data?.keyEvents, home?.id, home?.team?.name);
   const awayEvents = parseTeamIncidents(data?.keyEvents, away?.id, away?.team?.name);
@@ -232,26 +359,10 @@ function MatchSummaryContent({
         )}
         <div className="flex justify-between items-center">
           <TeamDisplay team={home?.team} score={home?.score} isPreMatch={matchState === "pre"} align="left" isGoal={goalSide === "home"} />
-          <div className="flex flex-col items-center px-4 gap-1.5">
-            {isHalftime ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-3 py-1 rounded-full border border-amber-500/20 dark:border-amber-400/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                Intervalo
-              </span>
-            ) : showShootoutScores ? (
-              <div className="flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20">
-                <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-right">
-                  {homeShootout}
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-amber-500/20 dark:bg-amber-400/20 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">
-                  PK
-                </span>
-                <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 min-w-3 text-left">
-                  {awayShootout}
-                </span>
-              </div>
-            ) : null}
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center">{statusDisplay}</span>
+          <div className="flex flex-col items-center px-4 gap-1.5 shrink-0">
+            {isScheduled && renderScheduledStatus()}
+            {isLive && renderLiveStatus()}
+            {isFinished && renderFinishedStatus()}
           </div>
           <TeamDisplay team={away?.team} score={away?.score} isPreMatch={matchState === "pre"} align="right" isGoal={goalSide === "away"} />
         </div>
