@@ -76,17 +76,17 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full min-w-[360px] table-fixed text-sm text-left">
               <thead className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 uppercase border-b border-slate-200 dark:border-slate-800/80">
                 <tr>
-                  <th className="px-4 py-3 w-8">#</th>
-                  <th className="px-4 py-3 min-w-[150px]">Clube</th>
-                  <th className="px-2 py-3 text-center" title="Pontos">P</th>
-                  <th className="px-2 py-3 text-center" title="Jogos">J</th>
-                  <th className="px-2 py-3 text-center" title="Vitórias">V</th>
-                  <th className="px-2 py-3 text-center" title="Empates">E</th>
-                  <th className="px-2 py-3 text-center" title="Derrotas">D</th>
-                  <th className="px-2 py-3 text-center" title="Saldo de Gols">SG</th>
+                  <th className="px-3 sm:px-4 py-3 w-10 sm:w-12 text-center">#</th>
+                  <th className="px-2 sm:px-4 py-3">Clube</th>
+                  <th className="px-1 sm:px-2 py-3 w-10 sm:w-14 md:w-16 text-center" title="Pontos">P</th>
+                  <th className="px-1 sm:px-2 py-3 w-10 sm:w-14 md:w-16 text-center" title="Jogos">J</th>
+                  <th className="px-1 sm:px-2 py-3 w-10 sm:w-14 md:w-16 text-center" title="Vitórias">V</th>
+                  <th className="px-1 sm:px-2 py-3 w-10 sm:w-14 md:w-16 text-center" title="Empates">E</th>
+                  <th className="px-1 sm:px-2 py-3 w-10 sm:w-14 md:w-16 text-center" title="Derrotas">D</th>
+                  <th className="px-1 sm:px-2 py-3 w-11 sm:w-14 md:w-16 text-center" title="Saldo de Gols">SG</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/50">
@@ -97,28 +97,30 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                   
                   return (
                     <tr key={entry.team.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">
+                      <td className="px-3 sm:px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
                         {getStat("rank")}
                       </td>
-                      <td className="px-4 py-3 flex items-center gap-3">
-                        <ThemeAdaptiveLogo
-                          lightSrc={teamLogos.light}
-                          darkSrc={teamLogos.dark}
-                          alt={entry.team.name}
-                          className="w-6 h-6 object-contain shrink-0"
-                        />
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {entry.team.shortDisplayName}
-                        </span>
+                      <td className="px-2 sm:px-4 py-3">
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <ThemeAdaptiveLogo
+                            lightSrc={teamLogos.light}
+                            darkSrc={teamLogos.dark}
+                            alt={entry.team.name}
+                            className="w-6 h-6 object-contain shrink-0"
+                          />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={entry.team.name}>
+                            {entry.team.shortDisplayName}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-2 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="px-1 sm:px-2 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {getStat("points")}
                       </td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("gamesPlayed")}</td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("wins")}</td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("ties")}</td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300">{getStat("losses")}</td>
-                      <td className="px-2 py-3 text-center text-slate-600 dark:text-slate-300 font-medium">
+                      <td className="px-1 sm:px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{getStat("gamesPlayed")}</td>
+                      <td className="px-1 sm:px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{getStat("wins")}</td>
+                      <td className="px-1 sm:px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{getStat("ties")}</td>
+                      <td className="px-1 sm:px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{getStat("losses")}</td>
+                      <td className="px-1 sm:px-2 py-3 text-center text-slate-600 dark:text-slate-300 font-medium tabular-nums">
                         {getStat("pointDifferential")}
                       </td>
                     </tr>

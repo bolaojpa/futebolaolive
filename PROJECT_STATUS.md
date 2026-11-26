@@ -152,6 +152,11 @@
 - **Solução:**
   - **`src/components/Standings.tsx`:** Adicionada ordenação estrita dos times em cada tabela por `rank` crescente (1º, 2º, 3º, 4º...), com desempates por `points`, `pointDifferential` e `wins`, além da normalização de idioma dos títulos (`Group` → `Grupo`, pois a ESPN retornava `Group G` e `Group H` em inglês) antes da ordenação alfabética (`Grupo A` até `Grupo H`). Garante ordem e tradução corretas em todas as ligas e fases de grupos.
 
+### 15. Alinhamento Simétrico das Colunas entre Tabelas de Grupos na Classificação
+- **Problema:** Na visualização com múltiplos grupos (Libertadores), cada tabela calculava a largura da coluna `Clube` conforme o tamanho do maior nome daquele grupo, desalinhando verticalmente as colunas `P`, `J`, `V`, `E`, `D` e `SG` entre um grupo e outro.
+- **Solução:**
+  - **`src/components/Standings.tsx`:** Alterada a tabela para `table-fixed` com larguras fixas responsivas nas colunas numéricas (`#`, `P`, `J`, `V`, `E`, `D`, `SG`), `tabular-nums` para alinhamento dígito-a-dígito e `truncate` no nome do clube. Todas as tabelas de grupos agora mantêm alinhamento vertical perfeito tanto no mobile quanto no desktop.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais
