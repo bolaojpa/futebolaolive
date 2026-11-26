@@ -282,6 +282,7 @@ export default function Home() {
         onClose={() => setSelectedEvent(null)}
         eventId={selectedEvent?.id || null}
         leagueSlug={selectedEvent?.slug || activeLeague}
+        scoreboardEvent={selectedEvent ? events.find((e) => e.id === selectedEvent.id) : undefined}
       />
     </main>
   );

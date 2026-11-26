@@ -103,6 +103,24 @@
 - **Solução:**
   - Toda a lógica de contagem regressiva ao vivo (`Começa em MM:SS`), `Aguarde o início`, `Intervalo` e relógio de tempo ao vivo foi replicada no placar gigante de `MatchDetails.tsx`, garantindo total consistência visual e de dados.
 
+### 10. Correção de Alertas Falsos/Atrasados (GOL! / VAR) e Sincronização Bidirecional em Tempo Real
+- **Problemas:**
+  1. Ao abrir o modal (`MatchDetails.tsx`) de uma partida no intervalo ou com placar menor que a partida vista anteriormente (ex.: sair de `1-1` e abrir `0-1`), o modal disparava um alerta falso de `🖥️ GOL ANULADO (VAR)`.
+  2. Ao abrir uma partida onde já havia saído gol há tempo (ou reabrir uma partida cujo cache do React Query ainda tinha o placar antigo), o modal disparava um alerta falso/atrasado de `⚽ GOL!`.
+  3. Tanto no `MatchCard.tsx` quanto no `MatchDetails.tsx`, o `return () => clearTimeout(t)` dentro do `useEffect` encerrava a execução antes de atualizar `prevScoresRef.current`, deixando a referência do placar anterior obsoleta.
+  4. A sincronização entre o card primário (`/scoreboard`) e o modal (`/summary`) era unidirecional e só ocorria em gols/VAR, podendo dessincronizar placar, status (ex.: Intervalo/Fim) e minuto.
+- **Causas Raiz:**
+  - `<MatchDetailsModal />` permanece montado em `src/app/page.tsx` e `prevScoresRef` não era resetado ao fechar ou trocar de `eventId`, comparando placares de jogos diferentes.
+  - O React Query exibia cache antigo do `/summary` ao reabrir um jogo antes do refetch completar, gerando falsa transição de placar.
+- **Solução:**
+  - **`src/app/page.tsx`:** Passa o `scoreboardEvent` ativo do scoreboard diretamente para `<MatchDetailsModal />`.
+  - **`src/components/MatchDetails.tsx`:**
+    - Reset completo de `goalAlert`, `goalSide`, `varAlert`, `prevScoresRef` (agora vinculado ao `eventId`) e timers (`alertTimeoutRef`) ao fechar ou trocar de partida.
+    - Inicialização da linha de base (`prevScoresRef`) com o placar atual do `scoreboardEvent` e uso de `openedAtRef` + `dataUpdatedAt` (`refetchOnMount: "always"`) para ignorar cache antigo do React Query ao reabrir uma partida (espelhando placar e status do card primário via `syncedData` enquanto o 1º refetch não retorna).
+    - Alertas `⚽ GOL!` e `🖥️ GOL ANULADO (VAR)` agora disparam **exclusivamente** quando há mudança real de placar ao vivo com o modal já aberto.
+    - Sincronização bidirecional por chave composta (`placar + state + status.type.id + displayClock`): mudanças no modal invalidam `["scoreboard"]` imediatamente, e mudanças no card primário invalidam `["matchSummary", leagueSlug, eventId]` imediatamente.
+  - **`src/components/MatchCard.tsx`:** Corrigida a ordem de atualização de `prevScoresRef.current` (agora vinculado a `event.id` e atualizado antes de agendar o timeout via `alertTimeoutRef`), impedindo referências obsoletas e cancelamento prematuro do alerta de 12s.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais

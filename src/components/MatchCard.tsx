@@ -63,51 +63,69 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
   const [goalAlert, setGoalAlert] = useState<boolean>(false);
   const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
   const [varAlert, setVarAlert] = useState<boolean>(false);
-  const prevScoresRef = useRef<{ home: string; away: string } | null>(null);
+  const prevScoresRef = useRef<{ eventId: string; home: number; away: number } | null>(null);
+  const alertTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const homeScoreStr = homeTeam.score ?? "0";
   const awayScoreStr = awayTeam.score ?? "0";
 
   useEffect(() => {
-    if (isLive) {
-      if (prevScoresRef.current !== null) {
-        const prevHome = parseInt(prevScoresRef.current.home, 10) || 0;
-        const prevAway = parseInt(prevScoresRef.current.away, 10) || 0;
-        const currHome = parseInt(homeScoreStr, 10) || 0;
-        const currAway = parseInt(awayScoreStr, 10) || 0;
-
-        if (currHome > prevHome) {
-          setVarAlert(false);
-          setGoalAlert(true);
-          setGoalSide("home");
-          const t = setTimeout(() => {
-            setGoalAlert(false);
-            setGoalSide(null);
-          }, 12000);
-          return () => clearTimeout(t);
-        } else if (currAway > prevAway) {
-          setVarAlert(false);
-          setGoalAlert(true);
-          setGoalSide("away");
-          const t = setTimeout(() => {
-            setGoalAlert(false);
-            setGoalSide(null);
-          }, 12000);
-          return () => clearTimeout(t);
-        } else if (currHome < prevHome || currAway < prevAway) {
-          // Placar diminuiu durante o jogo = Gol anulado pelo VAR
-          setGoalAlert(false);
-          setGoalSide(null);
-          setVarAlert(true);
-          const t = setTimeout(() => {
-            setVarAlert(false);
-          }, 12000);
-          return () => clearTimeout(t);
-        }
+    return () => {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
       }
-      prevScoresRef.current = { home: homeScoreStr, away: awayScoreStr };
+    };
+  }, []);
+
+  useEffect(() => {
+    const currHome = parseInt(homeScoreStr, 10) || 0;
+    const currAway = parseInt(awayScoreStr, 10) || 0;
+
+    if (!isLive) {
+      prevScoresRef.current = { eventId: event.id, home: currHome, away: currAway };
+      return;
     }
-  }, [homeScoreStr, awayScoreStr, isLive]);
+
+    // Primeiro registro ou troca de partida: apenas grava a referência base, sem disparar alerta
+    if (prevScoresRef.current === null || prevScoresRef.current.eventId !== event.id) {
+      prevScoresRef.current = { eventId: event.id, home: currHome, away: currAway };
+      return;
+    }
+
+    const prevHome = prevScoresRef.current.home;
+    const prevAway = prevScoresRef.current.away;
+
+    // Atualiza a referência ANTES de disparar qualquer alerta para nunca manter placar obsoleto
+    prevScoresRef.current = { eventId: event.id, home: currHome, away: currAway };
+
+    if (currHome > prevHome || currAway > prevAway || currHome < prevHome || currAway < prevAway) {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+
+      if (currHome > prevHome) {
+        setVarAlert(false);
+        setGoalAlert(true);
+        setGoalSide("home");
+      } else if (currAway > prevAway) {
+        setVarAlert(false);
+        setGoalAlert(true);
+        setGoalSide("away");
+      } else {
+        // Placar diminuiu durante o jogo = Gol anulado pelo VAR
+        setGoalAlert(false);
+        setGoalSide(null);
+        setVarAlert(true);
+      }
+
+      alertTimeoutRef.current = setTimeout(() => {
+        setGoalAlert(false);
+        setGoalSide(null);
+        setVarAlert(false);
+        alertTimeoutRef.current = null;
+      }, 12000);
+    }
+  }, [event.id, homeScoreStr, awayScoreStr, isLive]);
 
   // Formatar data: "Hoje/Amanhã/Ontem/DD/MM - HH:MM"
   const eventDate = new Date(event.date);

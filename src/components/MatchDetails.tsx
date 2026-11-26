@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMatchSummary } from "@/services/espnApi";
+import { ESPNEvent } from "@/types/espn";
 import { X, RefreshCw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +13,16 @@ interface MatchDetailsProps {
   onClose: () => void;
   eventId: string | null;
   leagueSlug: string;
+  scoreboardEvent?: ESPNEvent;
 }
 
-export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: MatchDetailsProps) {
+export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug, scoreboardEvent }: MatchDetailsProps) {
   const queryClient = useQueryClient();
-  const prevScoresRef = useRef<string | null>(null);
+  const prevScoresRef = useRef<{ eventId: string; home: number; away: number } | null>(null);
+  const alertTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedAtRef = useRef<number>(0);
+  const prevModalSyncKeyRef = useRef<string | null>(null);
+  const prevScoreboardSyncKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,10 +35,19 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
     };
   }, [isOpen]);
 
-  const { data, isLoading, error } = useQuery({
+  useEffect(() => {
+    return () => {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey: ["matchSummary", leagueSlug, eventId],
     queryFn: () => fetchMatchSummary(leagueSlug, eventId!),
     enabled: !!eventId && isOpen,
+    refetchOnMount: "always",
     refetchInterval: (query) => {
       // Se a partida estiver ao vivo ("in"), atualiza mais rápido (a cada 10s) para pegar gols/cartões
       const state = query.state.data?.header?.competitions?.[0]?.status?.type?.state;
@@ -45,52 +60,170 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
   const [goalSide, setGoalSide] = useState<"home" | "away" | null>(null);
   const [varAlert, setVarAlert] = useState<boolean>(false);
 
-  const homeScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "home")?.score;
-  const awayScore = data?.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === "away")?.score;
-  const isLive = data?.header?.competitions?.[0]?.status?.type?.state === "in";
+  // Dados atuais do Card Primário (scoreboard) para sincronização imediata e linha de base
+  const sbComp = scoreboardEvent?.competitions?.[0];
+  const sbHomeScore = sbComp?.competitors?.find((c) => c.homeAway === "home")?.score;
+  const sbAwayScore = sbComp?.competitors?.find((c) => c.homeAway === "away")?.score;
+  const sbStatus = scoreboardEvent?.status;
+  const sbState = sbStatus?.type?.state;
+
+  // Dados atuais do Modal (summary)
+  const summaryComp = data?.header?.competitions?.[0];
+  const summaryHomeScore = summaryComp?.competitors?.find((c: any) => c.homeAway === "home")?.score;
+  const summaryAwayScore = summaryComp?.competitors?.find((c: any) => c.homeAway === "away")?.score;
+  const summaryStatus = summaryComp?.status;
+  const summaryState = summaryStatus?.type?.state;
+
+  // Verifica se o summary carregado já é fresco (buscado após abrir este modal) ou se ainda é cache antigo
+  const isFreshSummary = !!data && dataUpdatedAt >= openedAtRef.current;
+
+  // Reset completo ao fechar o modal ou trocar de partida (evita vazamento de placar entre jogos)
+  useEffect(() => {
+    if (alertTimeoutRef.current) {
+      clearTimeout(alertTimeoutRef.current);
+      alertTimeoutRef.current = null;
+    }
+    setGoalAlert(false);
+    setGoalSide(null);
+    setVarAlert(false);
+    prevModalSyncKeyRef.current = null;
+    prevScoreboardSyncKeyRef.current = null;
+
+    if (!isOpen || !eventId) {
+      prevScoresRef.current = null;
+      return;
+    }
+
+    openedAtRef.current = Date.now();
+
+    // Se já temos o placar atual do Card Primário, definimos imediatamente como linha de base
+    // Isso impede qualquer alerta falso/atrasado ao abrir partidas que já tiveram gol
+    if (sbHomeScore !== undefined && sbAwayScore !== undefined) {
+      prevScoresRef.current = {
+        eventId,
+        home: parseInt(sbHomeScore, 10) || 0,
+        away: parseInt(sbAwayScore, 10) || 0,
+      };
+    } else {
+      prevScoresRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, eventId]);
+
+  // Placar efetivo ao vivo: ignora cache antigo do React Query ao reabrir a partida
+  const effectiveHomeScore = isFreshSummary && summaryHomeScore !== undefined ? summaryHomeScore : sbHomeScore;
+  const effectiveAwayScore = isFreshSummary && summaryAwayScore !== undefined ? summaryAwayScore : sbAwayScore;
+  const effectiveIsLive = isFreshSummary ? summaryState === "in" : sbState === "in";
+
+  // Detecção de Gol / VAR em tempo real (apenas para mudanças reais durante o modal aberto)
+  useEffect(() => {
+    if (!isOpen || !eventId) return;
+    if (!effectiveIsLive || effectiveHomeScore === undefined || effectiveAwayScore === undefined) return;
+
+    const currHome = parseInt(effectiveHomeScore, 10) || 0;
+    const currAway = parseInt(effectiveAwayScore, 10) || 0;
+
+    // Se ainda não havia linha de base (ex.: aberto pelo Mata-Mata sem scoreboardEvent), apenas grava sem alertar
+    if (prevScoresRef.current === null || prevScoresRef.current.eventId !== eventId) {
+      prevScoresRef.current = { eventId, home: currHome, away: currAway };
+      return;
+    }
+
+    const prevHome = prevScoresRef.current.home;
+    const prevAway = prevScoresRef.current.away;
+
+    // Atualiza referência ANTES de disparar o alerta para nunca manter placar desatualizado
+    prevScoresRef.current = { eventId, home: currHome, away: currAway };
+
+    if (currHome > prevHome || currAway > prevAway || currHome < prevHome || currAway < prevAway) {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+
+      if (currHome > prevHome) {
+        setVarAlert(false);
+        setGoalAlert(true);
+        setGoalSide("home");
+      } else if (currAway > prevAway) {
+        setVarAlert(false);
+        setGoalAlert(true);
+        setGoalSide("away");
+      } else {
+        // Placar diminuiu durante o jogo = Gol anulado pelo VAR
+        setGoalAlert(false);
+        setGoalSide(null);
+        setVarAlert(true);
+      }
+
+      // Garante sincronização imediata do Card Primário
+      queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
+
+      alertTimeoutRef.current = setTimeout(() => {
+        setGoalAlert(false);
+        setGoalSide(null);
+        setVarAlert(false);
+        alertTimeoutRef.current = null;
+      }, 12000);
+    }
+  }, [isOpen, eventId, effectiveHomeScore, effectiveAwayScore, effectiveIsLive, queryClient]);
+
+  // Sincronização bidirecional 1: Modal (/summary) -> Card Primário (/scoreboard)
+  // Sempre que placar, estado (pre/in/post), status (intervalo/fim) ou minuto mudar no modal, atualiza o scoreboard
+  const modalSyncKey = isFreshSummary
+    ? `${summaryHomeScore ?? ""}-${summaryAwayScore ?? ""}-${summaryState ?? ""}-${summaryStatus?.type?.id ?? ""}-${summaryStatus?.displayClock ?? ""}`
+    : null;
+
+  const scoreboardSyncKey = scoreboardEvent
+    ? `${sbHomeScore ?? ""}-${sbAwayScore ?? ""}-${sbState ?? ""}-${sbStatus?.type?.id ?? ""}-${sbStatus?.displayClock ?? ""}`
+    : null;
 
   useEffect(() => {
-    if (isLive && homeScore !== undefined && awayScore !== undefined) {
-      const currHome = parseInt(homeScore, 10) || 0;
-      const currAway = parseInt(awayScore, 10) || 0;
+    if (!isOpen || !eventId || !modalSyncKey) return;
 
-      if (prevScoresRef.current !== null) {
-        const [prevH, prevA] = prevScoresRef.current.split("-").map(Number);
-        if (currHome > prevH) {
-          setVarAlert(false);
-          setGoalAlert(true);
-          setGoalSide("home");
-          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
-          const t = setTimeout(() => {
-            setGoalAlert(false);
-            setGoalSide(null);
-          }, 12000);
-          return () => clearTimeout(t);
-        } else if (currAway > prevA) {
-          setVarAlert(false);
-          setGoalAlert(true);
-          setGoalSide("away");
-          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
-          const t = setTimeout(() => {
-            setGoalAlert(false);
-            setGoalSide(null);
-          }, 12000);
-          return () => clearTimeout(t);
-        } else if (currHome < prevH || currAway < prevA) {
-          // Placar diminuiu = Gol anulado pelo VAR
-          setGoalAlert(false);
-          setGoalSide(null);
-          setVarAlert(true);
-          queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
-          const t = setTimeout(() => {
-            setVarAlert(false);
-          }, 12000);
-          return () => clearTimeout(t);
-        }
+    if (prevModalSyncKeyRef.current !== null && prevModalSyncKeyRef.current !== modalSyncKey) {
+      if (!scoreboardSyncKey || modalSyncKey !== scoreboardSyncKey) {
+        queryClient.invalidateQueries({ queryKey: ["scoreboard"] });
       }
-      prevScoresRef.current = `${currHome}-${currAway}`;
     }
-  }, [homeScore, awayScore, isLive, queryClient]);
+    prevModalSyncKeyRef.current = modalSyncKey;
+  }, [isOpen, eventId, modalSyncKey, scoreboardSyncKey, queryClient]);
+
+  // Sincronização bidirecional 2: Card Primário (/scoreboard) -> Modal (/summary)
+  // Sempre que o card primário atualizar placar, status ou minuto antes do modal, força refetch imediato do modal
+  useEffect(() => {
+    if (!isOpen || !eventId || !scoreboardSyncKey) return;
+
+    if (prevScoreboardSyncKeyRef.current !== null && prevScoreboardSyncKeyRef.current !== scoreboardSyncKey) {
+      if (!modalSyncKey || scoreboardSyncKey !== modalSyncKey) {
+        queryClient.invalidateQueries({ queryKey: ["matchSummary", leagueSlug, eventId] });
+      }
+    }
+    prevScoreboardSyncKeyRef.current = scoreboardSyncKey;
+  }, [isOpen, eventId, leagueSlug, scoreboardSyncKey, modalSyncKey, queryClient]);
+
+  // Enquanto o summary ainda exibe cache antigo (antes do 1º refetch ao abrir),
+  // espelha placar e status do Card Primário para nunca exibir placar/status defasado nem dar flash antigo
+  const syncedData = (() => {
+    if (!data) return data;
+    if (isFreshSummary || !scoreboardEvent || !summaryComp) return data;
+    return {
+      ...data,
+      header: {
+        ...data.header,
+        competitions: [
+          {
+            ...summaryComp,
+            status: scoreboardEvent.status ?? summaryComp.status,
+            competitors: summaryComp.competitors?.map((c: any) => {
+              const sbMatch = sbComp?.competitors?.find((sc) => sc.homeAway === c.homeAway);
+              return sbMatch ? { ...c, score: sbMatch.score } : c;
+            }),
+          },
+          ...(data.header?.competitions?.slice(1) || []),
+        ],
+      },
+    };
+  })();
 
   return (
     <AnimatePresence>
@@ -133,7 +266,7 @@ export function MatchDetailsModal({ isOpen, onClose, eventId, leagueSlug }: Matc
                 </div>
               ) : (
                 <MatchSummaryContent 
-                  data={data as any} 
+                  data={syncedData as any} 
                   goalAlert={goalAlert}
                   goalSide={goalSide}
                   varAlert={varAlert}
