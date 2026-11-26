@@ -165,6 +165,27 @@
 
 ---
 
+## 🗺️ Roadmap / Ideias Anotadas (Em Análise pelo Usuário — Ainda Não Implementado)
+
+1. **Painel de Controle (`/admin`) para Campeonatos:**
+   - Permitir que o administrador ative/desative quais campeonatos aparecem no site (tanto no menu quanto na Home), além de opcionalmente reordenar ou cadastrar novos slugs da ESPN.
+   - A API pública da ESPN continua sendo a fonte dos jogos ao vivo; o banco guarda apenas a configuração de visibilidade/ordem.
+2. **Histórico Permanente em Banco de Dados Relacional Portável (PostgreSQL Padrão):**
+   - **Requisito obrigatório de portabilidade:** Se for implementado no Supabase, o schema **deve usar SQL/PostgreSQL padrão 100% relacional e agnóstico de provedor** (chaves primárias/estrangeiras limpas, sem amarrar regras de negócio em recursos proprietários do Supabase), permitindo migrar facilmente para qualquer outro provedor PostgreSQL (Neon, Railway, RDS, VPS, etc.) via `pg_dump`/exportação padrão.
+   - **Modelo híbrido planejado:**
+     - **Jogos ao vivo e próximos:** continuam 100% direto na API da ESPN (tempo real sem custo de banda no banco).
+     - **Histórico de jogos finalizados e temporadas encerradas:** gravados no banco (ex.: cron diário de madrugada) de forma normalizada e relacionada:
+       - `leagues` (slug, nome, `has_knockout`, `enabled`, `sort_order`, URLs de logo light/dark)
+       - `seasons` (ligada a `leagues`, ano/temporada)
+       - `teams` (`espn_id`, nome, nome curto, URLs de logo light/dark — **sem** arquivos binários de imagem)
+       - `matches` (ligada a `seasons` e `teams`, fase/rodada, data, placar, pênaltis, status)
+       - `match_events` (ligada a `matches` e `teams`: gols e cartões com jogador e minuto)
+       - `match_stats` e `match_lineups` (ligadas a `matches` e `teams` — **sem** salvar lance a lance completo para economizar espaço)
+       - `standings` (ligada a `seasons` e `teams`: grupo, posição, P, J, V, E, D, SG)
+   - *Status:* Anotado para análise futura do usuário; não iniciar implementação até confirmação explícita.
+
+---
+
 ## 📁 Estrutura de Arquivos Principais
 
 ```
