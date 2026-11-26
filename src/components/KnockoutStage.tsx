@@ -73,6 +73,7 @@ export function KnockoutStage({ leagueSlug, onMatchClick }: { leagueSlug: string
               <div key={event.id} className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(25%-1rem)] max-w-[450px]">
                 <MatchCard 
                   event={event}
+                  leagueName={stage.label}
                   leagueLogo={leagueLogos.light}
                   leagueLogoDark={leagueLogos.dark}
                   onClick={(id) => onMatchClick(id, leagueSlug)}

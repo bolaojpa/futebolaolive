@@ -157,6 +157,12 @@
 - **Solução:**
   - **`src/components/Standings.tsx`:** Alterada a tabela para `table-fixed` com larguras fixas responsivas nas colunas numéricas (`#`, `P`, `J`, `V`, `E`, `D`, `SG`), `tabular-nums` para alinhamento dígito-a-dígito e `truncate` no nome do clube. Todas as tabelas de grupos agora mantêm alinhamento vertical perfeito tanto no mobile quanto no desktop.
 
+### 16. Tradução das Rodadas/Fases dentro dos Cards do Mata-Mata
+- **Problema:** Na aba **Mata-Mata** (Libertadores e Champions League), o rótulo interno no topo de cada card exibia o slug bruto em inglês (`SEMIFINALS`, `QUARTERFINALS` e `ROUND OF`, com o `16` cortado) porque `KnockoutStage.tsx` não passava `leagueName` e `formatSeasonSlug()` em `MatchCard.tsx` não traduzia fases eliminatórias.
+- **Solução:**
+  - **`src/components/KnockoutStage.tsx`:** Passa `leagueName={stage.label}` (`Final`, `Semifinais`, `Quartas de Final`, `Oitavas de Final`) para cada `<MatchCard />`.
+  - **`src/components/MatchCard.tsx`:** Adicionado mapa de tradução PT-BR em `formatSeasonSlug()` para todas as fases (`final`, `semifinals`, `quarterfinals`, `round-of-16`, `round-of-32`, `playoffs`, `group-stage`, `league-phase`, `third-place`) como proteção global.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais

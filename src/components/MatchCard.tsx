@@ -205,9 +205,25 @@ export function MatchCard({ event, leagueName, leagueLogo, leagueLogoDark, onCli
     );
   };
 
-  // Formatar nome da liga a partir do slug (ex: "2024-25-english-premier-league" -> "English Premier League")
+  // Formatar nome da liga/fase a partir do slug (com tradução PT-BR para fases eliminatórias)
   const formatSeasonSlug = (slug: string) => {
     if (!slug) return "Competição";
+    const normalized = slug.toLowerCase().trim();
+    const stageTranslations: Record<string, string> = {
+      "final": "Final",
+      "semifinals": "Semifinais",
+      "quarterfinals": "Quartas de Final",
+      "round-of-16": "Oitavas de Final",
+      "round-of-32": "16 Avos de Final",
+      "knockout-round-playoffs": "Playoffs",
+      "playoffs": "Playoffs",
+      "group-stage": "Fase de Grupos",
+      "league-phase": "Fase de Liga",
+      "third-place": "Disputa de 3º Lugar",
+    };
+    if (stageTranslations[normalized]) {
+      return stageTranslations[normalized];
+    }
     const parts = slug.split("-");
     const nameParts = parts.filter(p => isNaN(Number(p))); // Remove anos
     return nameParts.join(" ").replace("english", "ENG").replace("brazilian", "BRA");
