@@ -141,6 +141,12 @@
     - Aplicada em `Finalizados` e `Próximos Jogos` nas abas de ligas específicas, resetando automaticamente ao trocar de liga ou aba (na **Home**, mantém o limite enxuto de 9 próximos e 9 últimos).
     - Adicionado filtro automático pela temporada mais recente (`season.year`) nas abas de ligas específicas para exibir todos os jogos exatamente até a 1ª rodada da temporada atual sem misturar temporadas anteriores.
 
+### 13. Exibição Condicional da Aba "Mata-Mata" Apenas em Competições Eliminatórias
+- **Problema:** A guia/opção **Mata-Mata** aparecia em ligas puramente de pontos corridos (Premier League, Brasileirão Série A, La Liga, Bundesliga e Serie A), exibindo uma tela vazia desnecessária.
+- **Solução:**
+  - **`src/components/LeagueSelector.tsx`:** Adicionada a propriedade explícita `hasKnockout` em cada item de `LEAGUES` (`true` apenas para `uefa.champions` e `conmebol.libertadores`; `false` para as ligas de pontos corridos).
+  - **`src/app/page.tsx`:** A opção **Mata-Mata** (tanto no dropdown mobile quanto nas abas desktop) e o componente `<KnockoutStage />` agora só são renderizados quando `activeLeagueHasKnockout` é verdadeiro.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais

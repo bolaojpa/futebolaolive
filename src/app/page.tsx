@@ -79,6 +79,7 @@ export default function Home() {
 
   // Próximos Jogos (ordem cronológica rigorosa crescente: mais próximos primeiro)
   const isHome = activeLeague === "all";
+  const activeLeagueHasKnockout = Boolean(LEAGUES.find((l) => l.slug === activeLeague)?.hasKnockout);
 
   // Nas abas de ligas específicas, filtra pela temporada mais recente para não misturar jogos da temporada anterior
   const latestSeasonYear = !isHome
@@ -234,7 +235,7 @@ export default function Home() {
                     <option value="upcoming">Próximos Jogos</option>
                     <option value="finished">Finalizados</option>
                     <option value="standings">Classificação</option>
-                    <option value="knockout">Mata-Mata</option>
+                    {activeLeagueHasKnockout && <option value="knockout">Mata-Mata</option>}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                     <ChevronDown className="w-5 h-5" />
@@ -264,18 +265,20 @@ export default function Home() {
                     <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "standings" ? "bg-amber-500" : "bg-slate-400 dark:bg-slate-600"}`} />
                     <h3 className="text-sm font-bold uppercase tracking-wider">Classificação</h3>
                   </button>
-                  <button 
-                    onClick={() => setLeagueFilterMode("knockout")}
-                    className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "knockout" ? "border-purple-500 text-purple-600 dark:text-purple-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-                  >
-                    <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "knockout" ? "bg-purple-500" : "bg-slate-400 dark:bg-slate-600"}`} />
-                    <h3 className="text-sm font-bold uppercase tracking-wider">Mata-Mata</h3>
-                  </button>
+                  {activeLeagueHasKnockout && (
+                    <button 
+                      onClick={() => setLeagueFilterMode("knockout")}
+                      className={`flex items-center gap-2 pb-2 -mb-[9px] border-b-2 transition-colors ${leagueFilterMode === "knockout" ? "border-purple-500 text-purple-600 dark:text-purple-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${leagueFilterMode === "knockout" ? "bg-purple-500" : "bg-slate-400 dark:bg-slate-600"}`} />
+                      <h3 className="text-sm font-bold uppercase tracking-wider">Mata-Mata</h3>
+                    </button>
+                  )}
                 </div>
                 
                 {leagueFilterMode === "standings" ? (
                   <Standings leagueSlug={activeLeague} />
-                ) : leagueFilterMode === "knockout" ? (
+                ) : leagueFilterMode === "knockout" && activeLeagueHasKnockout ? (
                   <KnockoutStage leagueSlug={activeLeague} onMatchClick={(id, slug) => setSelectedEvent({ id, slug })} />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

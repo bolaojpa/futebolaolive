@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 
 export const LEAGUES = [
-  { slug: "all", name: "🏠 Home" },
-  { slug: "uefa.champions", name: "Champions League" },
-  { slug: "conmebol.libertadores", name: "Libertadores" },
-  { slug: "eng.1", name: "Premier League" },
-  { slug: "bra.1", name: "Brasileirão Série A" },
-  { slug: "esp.1", name: "La Liga" },
-  { slug: "ger.1", name: "Bundesliga" },
-  { slug: "ita.1", name: "Serie A" },
+  { slug: "all", name: "🏠 Home", hasKnockout: false },
+  { slug: "uefa.champions", name: "Champions League", hasKnockout: true },
+  { slug: "conmebol.libertadores", name: "Libertadores", hasKnockout: true },
+  { slug: "eng.1", name: "Premier League", hasKnockout: false },
+  { slug: "bra.1", name: "Brasileirão Série A", hasKnockout: false },
+  { slug: "esp.1", name: "La Liga", hasKnockout: false },
+  { slug: "ger.1", name: "Bundesliga", hasKnockout: false },
+  { slug: "ita.1", name: "Serie A", hasKnockout: false },
 ];
 
 interface LeagueSelectorProps {
