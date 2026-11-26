@@ -27,10 +27,40 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
     );
   }
 
-  // Alguns campeonatos (como Champions) têm múltiplos grupos, então iteramos sobre "children"
+  // Ordena múltiplos grupos alfabeticamente (ex.: Grupo A, Grupo B, Grupo C...)
+  const sortedGroups = [...data.children].sort((a: any, b: any) =>
+    (a.name || "").localeCompare(b.name || "", "pt-BR", { numeric: true })
+  );
+
+  // Alguns campeonatos (como Libertadores e Champions) têm múltiplos grupos, então iteramos sobre "children"
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {data.children.map((group: any) => (
+      {sortedGroups.map((group: any) => {
+        const getNumericStat = (entry: any, name: string, fallback: number) => {
+          const stat = entry.stats?.find((s: any) => s.name === name);
+          if (stat?.value !== undefined && !isNaN(Number(stat.value))) return Number(stat.value);
+          const parsed = parseInt(stat?.displayValue, 10);
+          return isNaN(parsed) ? fallback : parsed;
+        };
+
+        // Garante ordenação estrita pela posição (rank 1, 2, 3, 4...) em qualquer liga ou fase de grupos
+        const sortedEntries = [...(group.standings?.entries || [])].sort((a: any, b: any) => {
+          const rankA = getNumericStat(a, "rank", 999);
+          const rankB = getNumericStat(b, "rank", 999);
+          if (rankA !== rankB) return rankA - rankB;
+
+          const ptsA = getNumericStat(a, "points", 0);
+          const ptsB = getNumericStat(b, "points", 0);
+          if (ptsA !== ptsB) return ptsB - ptsA;
+
+          const gdA = getNumericStat(a, "pointDifferential", 0);
+          const gdB = getNumericStat(b, "pointDifferential", 0);
+          if (gdA !== gdB) return gdB - gdA;
+
+          return getNumericStat(b, "wins", 0) - getNumericStat(a, "wins", 0);
+        });
+
+        return (
         <div key={group.uid} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs dark:shadow-none transition-colors">
           {group.name && group.name !== "Campeonato Brasileiro" && (
             <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
@@ -52,7 +82,7 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/50">
-                {group.standings?.entries?.map((entry: any) => {
+                {sortedEntries.map((entry: any) => {
                   const stats = entry.stats;
                   const getStat = (name: string) => stats.find((s: any) => s.name === name)?.displayValue || "0";
                   const teamLogos = extractEspnLogos(entry.team.logos, entry.team.logo);
@@ -90,7 +120,8 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
             </table>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

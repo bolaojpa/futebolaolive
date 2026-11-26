@@ -147,6 +147,11 @@
   - **`src/components/LeagueSelector.tsx`:** Adicionada a propriedade explícita `hasKnockout` em cada item de `LEAGUES` (`true` apenas para `uefa.champions` e `conmebol.libertadores`; `false` para as ligas de pontos corridos).
   - **`src/app/page.tsx`:** A opção **Mata-Mata** (tanto no dropdown mobile quanto nas abas desktop) e o componente `<KnockoutStage />` agora só são renderizados quando `activeLeagueHasKnockout` é verdadeiro.
 
+### 14. Correção da Ordenação da Tabela de Classificação (Libertadores e Demais Ligas)
+- **Problema:** Na aba **Classificação** (visível especialmente nos grupos da **Libertadores**), os times apareciam fora de ordem (ex.: 2º lugar acima do 1º, ou 3º, 4º, 2º, 1º) porque a API da ESPN pode retornar `standings.entries` desordenados.
+- **Solução:**
+  - **`src/components/Standings.tsx`:** Adicionada ordenação estrita dos times em cada tabela por `rank` crescente (1º, 2º, 3º, 4º...), com desempates por `points`, `pointDifferential` e `wins`, além da ordenação alfabética dos grupos (`Grupo A`, `Grupo B`, `Grupo C`...). Garante ordem correta em todas as ligas e fases de grupos.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais
