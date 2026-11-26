@@ -27,9 +27,15 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
     );
   }
 
-  // Ordena múltiplos grupos alfabeticamente (ex.: Grupo A, Grupo B, Grupo C...)
+  // Normaliza nomes de grupos que a API da ESPN ocasionalmente devolve em inglês ("Group G" -> "Grupo G")
+  const normalizeGroupName = (name?: string) => {
+    if (!name) return "";
+    return name.replace(/^Group\b/i, "Grupo");
+  };
+
+  // Ordena múltiplos grupos alfabeticamente já traduzidos (Grupo A, Grupo B, ..., Grupo G, Grupo H)
   const sortedGroups = [...data.children].sort((a: any, b: any) =>
-    (a.name || "").localeCompare(b.name || "", "pt-BR", { numeric: true })
+    normalizeGroupName(a.name).localeCompare(normalizeGroupName(b.name), "pt-BR", { numeric: true })
   );
 
   // Alguns campeonatos (como Libertadores e Champions) têm múltiplos grupos, então iteramos sobre "children"
@@ -60,11 +66,13 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
           return getNumericStat(b, "wins", 0) - getNumericStat(a, "wins", 0);
         });
 
+        const displayGroupName = normalizeGroupName(group.name);
+
         return (
         <div key={group.uid} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs dark:shadow-none transition-colors">
-          {group.name && group.name !== "Campeonato Brasileiro" && (
+          {displayGroupName && displayGroupName !== "Campeonato Brasileiro" && (
             <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
-              {group.name}
+              {displayGroupName}
             </div>
           )}
           <div className="overflow-x-auto">

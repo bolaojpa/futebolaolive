@@ -150,7 +150,7 @@
 ### 14. Correção da Ordenação da Tabela de Classificação (Libertadores e Demais Ligas)
 - **Problema:** Na aba **Classificação** (visível especialmente nos grupos da **Libertadores**), os times apareciam fora de ordem (ex.: 2º lugar acima do 1º, ou 3º, 4º, 2º, 1º) porque a API da ESPN pode retornar `standings.entries` desordenados.
 - **Solução:**
-  - **`src/components/Standings.tsx`:** Adicionada ordenação estrita dos times em cada tabela por `rank` crescente (1º, 2º, 3º, 4º...), com desempates por `points`, `pointDifferential` e `wins`, além da ordenação alfabética dos grupos (`Grupo A`, `Grupo B`, `Grupo C`...). Garante ordem correta em todas as ligas e fases de grupos.
+  - **`src/components/Standings.tsx`:** Adicionada ordenação estrita dos times em cada tabela por `rank` crescente (1º, 2º, 3º, 4º...), com desempates por `points`, `pointDifferential` e `wins`, além da normalização de idioma dos títulos (`Group` → `Grupo`, pois a ESPN retornava `Group G` e `Group H` em inglês) antes da ordenação alfabética (`Grupo A` até `Grupo H`). Garante ordem e tradução corretas em todas as ligas e fases de grupos.
 
 ---
 
