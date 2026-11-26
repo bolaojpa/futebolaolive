@@ -121,6 +121,15 @@
     - Sincronização bidirecional por chave composta (`placar + state + status.type.id + displayClock`): mudanças no modal invalidam `["scoreboard"]` imediatamente, e mudanças no card primário invalidam `["matchSummary", leagueSlug, eventId]` imediatamente.
   - **`src/components/MatchCard.tsx`:** Corrigida a ordem de atualização de `prevScoresRef.current` (agora vinculado a `event.id` e atualizado antes de agendar o timeout via `alertTimeoutRef`), impedindo referências obsoletas e cancelamento prematuro do alerta de 12s.
 
+### 11. Logos Nativas Adaptativas para Modo Claro e Escuro (Ligas e Clubes via ESPN)
+- **Problema:** No Modo Escuro, logos escuras como a da **Champions League** (estrelas pretas) e escudos escuros de clubes (ex.: **Juventus**, **Tottenham**, **Athletico-PR**) ficavam com baixo contraste ou quase invisíveis sobre o fundo escuro, porque o código sempre carregava apenas `logos[0]` (`/500/`).
+- **Causa Raiz:** A API e o CDN da ESPN fornecem nativamente duas variantes oficiais para ligas e clubes: `/500/` (`rel: ["full", "default"]` para fundo claro) e `/500-dark/` (`rel: ["full", "dark"]` para fundo escuro). Para clubes que não precisam de adaptação (ex.: Flamengo), o próprio CDN da ESPN retorna o escudo padrão em `/500-dark/`.
+- **Solução:**
+  - **`src/lib/espnLogos.ts`:** Criados os utilitários `extractEspnLogos()` (extrai as variantes `default` e `dark` do array `logos` da API) e `toEspnDarkLogoUrl()` (converte `/500/` para `/500-dark/`).
+  - **`src/components/ThemeAdaptiveLogo.tsx`:** Componente reutilizável integrado ao `useTheme()` (`resolvedTheme`) que alterna automaticamente entre a logo clara e a logo escura nativa da ESPN, com fallback automático via `onError` para a versão padrão caso algum clube menor não possua versão `/500-dark/`.
+  - **`src/services/espnApi.ts` e `src/app/page.tsx`:** Passam a extrair e propagar tanto `_customLeagueLogo` (`default`) quanto `_customLeagueLogoDark` (`dark`) para todos os cards.
+  - **`MatchCard.tsx`, `MatchDetails.tsx`, `Standings.tsx` e `KnockoutStage.tsx`:** Atualizados para renderizar logos de ligas e escudos de clubes via `<ThemeAdaptiveLogo />`, garantindo alto contraste em Modo Claro, Escuro e Automático em 100% do site.
+
 ---
 
 ## 📁 Estrutura de Arquivos Principais

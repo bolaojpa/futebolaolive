@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchStandings } from "@/services/espnApi";
 import { Loader2 } from "lucide-react";
+import { extractEspnLogos } from "@/lib/espnLogos";
+import { ThemeAdaptiveLogo } from "@/components/ThemeAdaptiveLogo";
 
 export function Standings({ leagueSlug }: { leagueSlug: string }) {
   const { data, isLoading, error } = useQuery({
@@ -53,6 +55,7 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                 {group.standings?.entries?.map((entry: any) => {
                   const stats = entry.stats;
                   const getStat = (name: string) => stats.find((s: any) => s.name === name)?.displayValue || "0";
+                  const teamLogos = extractEspnLogos(entry.team.logos, entry.team.logo);
                   
                   return (
                     <tr key={entry.team.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -60,10 +63,11 @@ export function Standings({ leagueSlug }: { leagueSlug: string }) {
                         {getStat("rank")}
                       </td>
                       <td className="px-4 py-3 flex items-center gap-3">
-                        <img 
-                          src={entry.team.logos?.[0]?.href} 
-                          alt={entry.team.name} 
-                          className="w-6 h-6 object-contain"
+                        <ThemeAdaptiveLogo
+                          lightSrc={teamLogos.light}
+                          darkSrc={teamLogos.dark}
+                          alt={entry.team.name}
+                          className="w-6 h-6 object-contain shrink-0"
                         />
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {entry.team.shortDisplayName}

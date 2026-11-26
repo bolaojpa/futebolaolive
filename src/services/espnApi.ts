@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ESPNScoreboardResponse, MatchSummary } from "@/types/espn";
+import { extractEspnLogos } from "@/lib/espnLogos";
 
 const ESPN_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 
@@ -80,12 +81,14 @@ export const fetchScoreboard = async (
       const pastMap = new Map<string, any>();
       pastResults.forEach((res) => {
         if (res && res.data && res.data.events) {
+          const leagueLogos = extractEspnLogos(res.data.leagues?.[0]?.logos);
           res.data.events.forEach((e: any) => {
             if (!pastMap.has(e.id)) {
               pastMap.set(e.id, {
                 ...e,
                 _customLeagueSlug: res.slug,
-                _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
+                _customLeagueLogo: leagueLogos.light,
+                _customLeagueLogoDark: leagueLogos.dark
               });
             }
           });
@@ -106,11 +109,13 @@ export const fetchScoreboard = async (
     // Insere e sobrescreve com os dados mais recentes da rodada atual e de amanhã
     liveResults.forEach((res) => {
       if (res && res.data && res.data.events) {
+        const leagueLogos = extractEspnLogos(res.data.leagues?.[0]?.logos);
         res.data.events.forEach((e: any) => {
           eventMap.set(e.id, {
             ...e,
             _customLeagueSlug: res.slug,
-            _customLeagueLogo: res.data.leagues?.[0]?.logos?.[0]?.href
+            _customLeagueLogo: leagueLogos.light,
+            _customLeagueLogoDark: leagueLogos.dark
           });
         });
       }

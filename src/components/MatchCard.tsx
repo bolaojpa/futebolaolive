@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { ESPNEvent } from "@/types/espn";
 import { cn } from "@/lib/utils";
+import { ThemeAdaptiveLogo } from "@/components/ThemeAdaptiveLogo";
 
 interface MatchCardProps {
   event: ESPNEvent;
   leagueName?: string;
   leagueLogo?: string;
+  leagueLogoDark?: string;
   onClick: (eventId: string) => void;
   isDimmed?: boolean;
 }
 
-export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: MatchCardProps) {
+export function MatchCard({ event, leagueName, leagueLogo, leagueLogoDark, onClick, isDimmed }: MatchCardProps) {
   const competition = event.competitions[0];
   const homeTeam = competition.competitors.find((c) => c.homeAway === "home")!;
   const awayTeam = competition.competitors.find((c) => c.homeAway === "away")!;
@@ -229,8 +231,14 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
           className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate min-w-0 flex items-center gap-1.5"
           title={competitionName}
         >
-          {leagueLogo ? (
-            <img src={leagueLogo} alt={competitionName} className="w-4 h-4 object-contain shrink-0" />
+          {leagueLogo || leagueLogoDark ? (
+            <ThemeAdaptiveLogo
+              lightSrc={leagueLogo}
+              darkSrc={leagueLogoDark}
+              alt={competitionName}
+              className="w-4 h-4 object-contain shrink-0"
+              fallback={<span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />}
+            />
           ) : (
             <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0"></span>
           )}
@@ -272,11 +280,12 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         {/* Home Team */}
         <div className="flex flex-col items-center gap-2 flex-1" title={homeTeam.team.name}>
           <div className="w-12 h-12 relative flex items-center justify-center">
-            {homeTeam.team.logo ? (
-              <img src={homeTeam.team.logo} alt={homeTeam.team.name} className="w-10 h-10 object-contain" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />
-            )}
+            <ThemeAdaptiveLogo
+              lightSrc={homeTeam.team.logo}
+              alt={homeTeam.team.name}
+              className="w-10 h-10 object-contain"
+              fallback={<div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />}
+            />
           </div>
           <span className={cn(
             "text-sm font-semibold text-center line-clamp-1 transition-colors",
@@ -342,11 +351,12 @@ export function MatchCard({ event, leagueName, leagueLogo, onClick, isDimmed }: 
         {/* Away Team */}
         <div className="flex flex-col items-center gap-2 flex-1" title={awayTeam.team.name}>
           <div className="w-12 h-12 relative flex items-center justify-center">
-            {awayTeam.team.logo ? (
-              <img src={awayTeam.team.logo} alt={awayTeam.team.name} className="w-10 h-10 object-contain" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />
-            )}
+            <ThemeAdaptiveLogo
+              lightSrc={awayTeam.team.logo}
+              alt={awayTeam.team.name}
+              className="w-10 h-10 object-contain"
+              fallback={<div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800" />}
+            />
           </div>
           <span className={cn(
             "text-sm font-semibold text-center line-clamp-1 transition-colors",

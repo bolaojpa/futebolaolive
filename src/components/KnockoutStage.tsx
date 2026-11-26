@@ -3,6 +3,7 @@ import { fetchScoreboard } from "@/services/espnApi";
 import { MatchCard } from "./MatchCard";
 import { Loader2 } from "lucide-react";
 import { ESPNEvent } from "@/types/espn";
+import { extractEspnLogos } from "@/lib/espnLogos";
 
 const KNOCKOUT_STAGES = [
   { slug: "final", label: "Final" },
@@ -30,6 +31,7 @@ export function KnockoutStage({ leagueSlug, onMatchClick }: { leagueSlug: string
   }
 
   const allEvents = data?.events || [];
+  const leagueLogos = extractEspnLogos(data?.leagues?.[0]?.logos);
   
   // Encontrar o ano da temporada mais recente no payload (evita misturar Champions League 25/26 com 26/27)
   const latestSeasonYear = Math.max(...allEvents.map((e: any) => e.season?.year || 0));
@@ -71,6 +73,8 @@ export function KnockoutStage({ leagueSlug, onMatchClick }: { leagueSlug: string
               <div key={event.id} className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(25%-1rem)] max-w-[450px]">
                 <MatchCard 
                   event={event}
+                  leagueLogo={leagueLogos.light}
+                  leagueLogoDark={leagueLogos.dark}
                   onClick={(id) => onMatchClick(id, leagueSlug)}
                 />
               </div>

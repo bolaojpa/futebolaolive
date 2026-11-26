@@ -7,6 +7,8 @@ import { X, RefreshCw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { extractEspnLogos } from "@/lib/espnLogos";
+import { ThemeAdaptiveLogo } from "@/components/ThemeAdaptiveLogo";
 
 interface MatchDetailsProps {
   isOpen: boolean;
@@ -762,14 +764,18 @@ function TeamDisplay({
   align: "left" | "right"; 
   isGoal?: boolean;
 }) {
+  const { light: lightLogo, dark: darkLogo } = extractEspnLogos(team?.logos, team?.logo);
+
   return (
     <div className={`flex flex-col items-center gap-3 flex-1`}>
       <div className="w-16 h-16 relative flex items-center justify-center">
-        {team?.logos?.[0]?.href ? (
-           <img src={team?.logos?.[0]?.href} alt={team?.name} className="w-16 h-16 object-contain" />
-        ) : (
-           <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800" />
-        )}
+        <ThemeAdaptiveLogo
+          lightSrc={lightLogo}
+          darkSrc={darkLogo}
+          alt={team?.name || "Clube"}
+          className="w-16 h-16 object-contain"
+          fallback={<div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800" />}
+        />
       </div>
       <div className="text-center">
         <span className={cn(

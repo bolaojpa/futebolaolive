@@ -10,6 +10,7 @@ import { MatchDetailsModal } from "@/components/MatchDetails";
 import { RefreshCw, ChevronDown } from "lucide-react";
 import { Standings } from "@/components/Standings";
 import { KnockoutStage } from "@/components/KnockoutStage";
+import { extractEspnLogos } from "@/lib/espnLogos";
 
 export default function Home() {
   const [activeLeague, setActiveLeague] = useState<string>(LEAGUES[0].slug);
@@ -40,8 +41,12 @@ export default function Home() {
     return event._customLeagueSlug || activeLeague;
   };
 
-  const getLeagueLogo = (event: any) => {
-    return event._customLeagueLogo || data?.leagues?.[0]?.logos?.[0]?.href;
+  const getLeagueLogos = (event: any) => {
+    const fallbackLogos = extractEspnLogos(data?.leagues?.[0]?.logos);
+    return {
+      light: event._customLeagueLogo || fallbackLogos.light,
+      dark: event._customLeagueLogoDark || fallbackLogos.dark,
+    };
   };
 
   const liveEvents = events.filter((e) => e.status.type.state === "in");
@@ -129,7 +134,8 @@ export default function Home() {
                       key={event.id} 
                       event={event} 
                       leagueName={getLeagueName(event)} 
-                      leagueLogo={getLeagueLogo(event)}
+                      leagueLogo={getLeagueLogos(event).light}
+                      leagueLogoDark={getLeagueLogos(event).dark}
                       onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                     />
                   ))}
@@ -152,7 +158,8 @@ export default function Home() {
                           key={event.id} 
                           event={event} 
                           leagueName={getLeagueName(event)} 
-                          leagueLogo={getLeagueLogo(event)}
+                          leagueLogo={getLeagueLogos(event).light}
+                      leagueLogoDark={getLeagueLogos(event).dark}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
                       ))}
@@ -172,7 +179,8 @@ export default function Home() {
                           key={event.id} 
                           event={event} 
                           leagueName={getLeagueName(event)} 
-                          leagueLogo={getLeagueLogo(event)}
+                          leagueLogo={getLeagueLogos(event).light}
+                      leagueLogoDark={getLeagueLogos(event).dark}
                           isDimmed={true}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
@@ -246,7 +254,8 @@ export default function Home() {
                           key={event.id} 
                           event={event} 
                           leagueName={getLeagueName(event)} 
-                          leagueLogo={getLeagueLogo(event)}
+                          leagueLogo={getLeagueLogos(event).light}
+                      leagueLogoDark={getLeagueLogos(event).dark}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
                       ))
@@ -260,7 +269,8 @@ export default function Home() {
                           key={event.id} 
                           event={event} 
                           leagueName={getLeagueName(event)} 
-                          leagueLogo={getLeagueLogo(event)}
+                          leagueLogo={getLeagueLogos(event).light}
+                      leagueLogoDark={getLeagueLogos(event).dark}
                           isDimmed={true}
                           onClick={(id) => setSelectedEvent({ id, slug: getLeagueSlug(event) })} 
                         />
