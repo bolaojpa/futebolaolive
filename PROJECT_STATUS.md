@@ -16,6 +16,8 @@
    - Sempre executar `npm run build` antes de commitar para garantir zero erros de TypeScript, Turbopack e Next.js.
 4. **Atualização Contínua deste Documento:**
    - **Obrigatório:** A cada nova alteração, correção ou funcionalidade adicionada ao projeto, o arquivo `PROJECT_STATUS.md` **deve ser atualizado** com as novas instruções e detalhes técnicos, e commitado junto no GitHub para garantir continuidade perfeita entre diferentes computadores.
+5. **Foco Mobile-First (sem abandonar Desktop):**
+   - O sistema é focado prioritariamente em navegação **mobile**, mantendo também excelente layout e experiência no **desktop**.
 
 ---
 
@@ -129,6 +131,15 @@
   - **`src/components/ThemeAdaptiveLogo.tsx`:** Componente reutilizável integrado ao `useTheme()` (`resolvedTheme`) que alterna automaticamente entre a logo clara e a logo escura nativa da ESPN, com fallback automático via `onError` para a versão padrão caso algum clube menor não possua versão `/500-dark/`.
   - **`src/services/espnApi.ts` e `src/app/page.tsx`:** Passam a extrair e propagar tanto `_customLeagueLogo` (`default`) quanto `_customLeagueLogoDark` (`dark`) para todos os cards.
   - **`MatchCard.tsx`, `MatchDetails.tsx`, `Standings.tsx` e `KnockoutStage.tsx`:** Atualizados para renderizar logos de ligas e escudos de clubes via `<ThemeAdaptiveLogo />`, garantindo alto contraste em Modo Claro, Escuro e Automático em 100% do site.
+
+### 12. Paginação Incremental Responsiva ("Mostrar mais jogos") e Filtro por Temporada Atual
+- **Problema:** Nas abas de ligas específicas (`Finalizados` e `Próximos Jogos`), um corte fixo de `.slice(0, 50)` em `src/app/page.tsx` renderizava 50 cards de uma vez (pesando o DOM) e descartava todos os jogos mais antigos até o início da competição (ex.: no Brasileirão, a API retornava 364 finalizados e apenas 50 apareciam). Além disso, ligas europeias misturavam jogos da temporada anterior dentro do mesmo ano civil.
+- **Solução:**
+  - **`src/app/page.tsx`:**
+    - Implementada paginação incremental 100% em memória (sem recarregar página nem fazer novas requisições à API) via botão **`Mostrar mais jogos (+X)`** com contador `Exibindo X de Y partidas`.
+    - Lote responsivo controlado por `matchMedia("(min-width: 1024px)")`: **10 em 10 no mobile** (mobile-first) e **12 em 12 no desktop** (fechando linhas completas na grade `lg:grid-cols-3`).
+    - Aplicada em `Finalizados` e `Próximos Jogos` nas abas de ligas específicas, resetando automaticamente ao trocar de liga ou aba (na **Home**, mantém o limite enxuto de 9 próximos e 9 últimos).
+    - Adicionado filtro automático pela temporada mais recente (`season.year`) nas abas de ligas específicas para exibir todos os jogos exatamente até a 1ª rodada da temporada atual sem misturar temporadas anteriores.
 
 ---
 

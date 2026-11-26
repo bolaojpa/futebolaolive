@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScoreboard } from "@/services/espnApi";
 import { Header } from "@/components/Header";
@@ -16,6 +16,25 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState<string>(LEAGUES[0].slug);
   const [selectedEvent, setSelectedEvent] = useState<{ id: string, slug: string } | null>(null);
   const [leagueFilterMode, setLeagueFilterMode] = useState<"upcoming" | "finished" | "standings" | "knockout">("upcoming");
+  // Paginação incremental responsiva: 10 em 10 no mobile (mobile-first) e 12 em 12 no desktop (grade de 3 colunas)
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const syncPageSize = () => {
+      const nextSize = mq.matches ? 12 : 10;
+      setPageSize(nextSize);
+      setVisibleCount((prev) => (prev === 10 || prev === 12 ? nextSize : prev));
+    };
+    syncPageSize();
+    mq.addEventListener("change", syncPageSize);
+    return () => mq.removeEventListener("change", syncPageSize);
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount(pageSize);
+  }, [activeLeague, leagueFilterMode, pageSize]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["scoreboard", activeLeague],
@@ -60,10 +79,17 @@ export default function Home() {
 
   // Próximos Jogos (ordem cronológica rigorosa crescente: mais próximos primeiro)
   const isHome = activeLeague === "all";
-  const upcomingLimit = isHome ? 9 : 50;
-  const finishedLimit = isHome ? 9 : 50;
 
-  const upcomingEvents = events
+  // Nas abas de ligas específicas, filtra pela temporada mais recente para não misturar jogos da temporada anterior
+  const latestSeasonYear = !isHome
+    ? events.reduce((max: number, e: any) => Math.max(max, e.season?.year || 0), 0)
+    : 0;
+
+  const scopedEvents = !isHome && latestSeasonYear > 0
+    ? events.filter((e: any) => !e.season?.year || e.season.year === latestSeasonYear)
+    : events;
+
+  const allUpcomingEvents = scopedEvents
     .filter((e) => {
       if (e.status.type.state !== "pre") return false;
       // Não exibir jogos adiados ou cancelados no meio dos próximos jogos cronológicos
@@ -79,19 +105,25 @@ export default function Home() {
       const leagueComp = getLeagueName(a).localeCompare(getLeagueName(b));
       if (leagueComp !== 0) return leagueComp;
       return (a.name || "").localeCompare(b.name || "");
-    })
-    .slice(0, upcomingLimit);
-    
-  // Últimos Jogos (ordem cronológica decrescente: mais recentes primeiro)
-  const finishedEvents = events
+    });
+
+  // Últimos Jogos / Finalizados (ordem cronológica decrescente: mais recentes primeiro)
+  const allFinishedEvents = scopedEvents
     .filter((e) => e.status.type.state === "post")
     .sort((a, b) => {
       const timeA = getEventTimestamp(a);
       const timeB = getEventTimestamp(b);
       if (timeA !== timeB) return timeB - timeA;
       return (a.name || "").localeCompare(b.name || "");
-    })
-    .slice(0, finishedLimit);
+    });
+
+  const upcomingEvents = allUpcomingEvents.slice(0, isHome ? 9 : visibleCount);
+  const finishedEvents = allFinishedEvents.slice(0, isHome ? 9 : visibleCount);
+
+  const activeListTotal = leagueFilterMode === "upcoming" ? allUpcomingEvents.length : allFinishedEvents.length;
+  const activeListVisible = leagueFilterMode === "upcoming" ? upcomingEvents.length : finishedEvents.length;
+  const remainingCount = Math.max(0, activeListTotal - activeListVisible);
+  const nextBatchCount = Math.min(pageSize, remainingCount);
 
   return (
     <main className="flex-1 flex flex-col bg-slate-100 dark:bg-[#020617] text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -280,6 +312,25 @@ export default function Home() {
                     )
                   )}
                 </div>
+                )}
+
+                {(leagueFilterMode === "upcoming" || leagueFilterMode === "finished") && activeListTotal > 0 && (
+                  <div className="mt-8 flex flex-col items-center gap-3">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Exibindo <span className="font-bold text-slate-700 dark:text-slate-200">{activeListVisible}</span> de{" "}
+                      <span className="font-bold text-slate-700 dark:text-slate-200">{activeListTotal}</span> partidas
+                    </p>
+                    {remainingCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount((prev) => prev + pageSize)}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-sm border border-emerald-500/30 hover:border-emerald-500/60 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                      >
+                        <span>Mostrar mais jogos (+{nextBatchCount})</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </section>
             )}
